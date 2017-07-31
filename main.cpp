@@ -1240,7 +1240,7 @@ static int l_ConPrintf(lua_State* L)
     lua_insert(L, 1);
     lua_call(L, n, 1);
     pobwindow->LAssert(L, lua_isstring(L, 1), "ConPrintf() error: string.format returned non-string");
-    //std::cout << std::endl << std::endl << std::endl << lua_tostring(L, 1) << std::endl;
+    std::cout << lua_tostring(L, 1) << std::endl;
     //pobwindow->sys->con->Printf("%s\n", lua_tostring(L, 1));
     return 0;
 }

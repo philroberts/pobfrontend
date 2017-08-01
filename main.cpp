@@ -43,8 +43,8 @@ void POBWindow::paintGL() {
     glColor4f(0, 0, 0, 0);
     painter = new QPainter(this);
 
+    bool clean = true;
     for (int i = 0;i < subScriptList.size();i++) {
-        bool clean = true;
         if (subScriptList[i].get()) {
             clean = false;
             if (subScriptList[i]->isFinished()) {
@@ -52,9 +52,9 @@ void POBWindow::paintGL() {
                 subScriptList[i].reset();
             }
         }
-        if (clean) {
-            subScriptList.empty();
-        }
+    }
+    if (clean) {
+        subScriptList.clear();
     }
 
     lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");

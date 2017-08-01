@@ -764,7 +764,7 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
 
     QFont font("Inconsolata", Size - 5);
     QFontMetrics fm(font);
-    Y += fm.height() * 0.9;
+    Y += floor(fm.height() * 0.9);
     double width = fm.width(text);
     switch (Align) {
     case F_CENTRE:

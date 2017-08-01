@@ -821,7 +821,6 @@ static int l_searchHandleNextFile(lua_State* L)
     QFileInfoList* searchHandle = GetSearchHandle(L, "NextFile", true);
     searchHandle->removeFirst();
     if ( searchHandle->isEmpty() ) {
-        delete searchHandle;
         return 0;
     }
     lua_pushboolean(L, 1);

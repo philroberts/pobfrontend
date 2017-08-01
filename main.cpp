@@ -48,7 +48,6 @@ void POBWindow::paintGL() {
         if (subScriptList[i].get()) {
             clean = false;
             if (subScriptList[i]->isFinished()) {
-                std::cout << "Script finished!" << std::endl;
                 subScriptList[i]->onSubFinished(L, i);
                 subScriptList[i].reset();
             }
@@ -1248,7 +1247,6 @@ static int l_LaunchSubScript(lua_State* L)
     int slot = pobwindow->subScriptList.size();
     pobwindow->subScriptList.append(std::shared_ptr<SubScript>(new SubScript(L)));
     pobwindow->subScriptList[slot]->start();
-    std::cout << "Slot: " << slot << std::endl;
     lua_pushinteger(L, slot);
     return 1;
 }

@@ -46,10 +46,8 @@ public:
     }
     
     void run() override {
-        std::cout << "Thread running!" << std::endl;
         int numarg = (int)lua_tointeger(L, -1);
         lua_pop(L, 1);
-        std::cout << numarg << ", " << lua_gettop(L) << std::endl;
         if (lua_pcall(L, numarg, LUA_MULTRET, 0)) {
             std::cout << "Error in thread call: " << lua_tostring(L, -1) << std::endl;
         }
@@ -66,29 +64,21 @@ public:
             switch (lua_type(L, i)) {
             case LUA_TNIL:
                 lua_pushnil(L_main);
-                std::cout << "pushnil" << std::endl;
                 break;
             case LUA_TBOOLEAN:
                 lua_pushboolean(L_main, lua_toboolean(L, i));
-                std::cout << "pushbool" << std::endl;
                 break;
             case LUA_TNUMBER:
                 lua_pushnumber(L_main, lua_tonumber(L, i));
-                std::cout << "pushnum" << std::endl;
                 break;
             case LUA_TSTRING:
                 lua_pushstring(L_main, lua_tostring(L, i));
-                std::cout << "pushstr" << std::endl;
-                std::cout << lua_tostring(L, i) << std::endl;
                 break;
             default:
                 std::cout << "Subscript return " << (i - 1) << ": only nil, boolean, number and string can be returned from sub script" << std::endl;
                 return;
             }
         }
-        std::cout << "ID is " << id << std::endl;
-        std::cout << "onsubfinished main top: " << lua_gettop(L_main) << " thread top: " << lua_gettop(L) << std::endl;
-        std::cout << lua_type(L, -1) << " " << LUA_TNIL << " " << LUA_TBOOLEAN << " " << LUA_TNUMBER << " " << LUA_TSTRING << " " << LUA_TTABLE << std::endl;
         int result = lua_pcall(L_main, lua_gettop(L) + 2, 0, 0);
         if (result) {
             std::cout << "Error calling OnSubFinished: " << result << std::endl;

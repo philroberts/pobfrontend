@@ -1,30 +1,20 @@
 #include <QColor>
 #include <QDateTime>
 #include <QDir>
-#include <QFontMetrics>
-#include <QOpenGLTexture>
-#include <QPainter>
 #include <QKeyEvent>
 #include <QtGui/QGuiApplication>
-//#include <QApplication>
 
-#include <QtCore/qmath.h>
 #include <iostream>
-#include <sstream>
-
-extern "C" {
-    #include "lua.h"
-    #include "lualib.h"
-    #include "lauxlib.h"
-    #include "luajit.h"
-}
 
 #include "main.h"
+#include "pobwindow.hpp"
+#include "subscript.hpp"
 
 lua_State *L;
 
 void POBWindow::initializeGL() {
     std::cout << "initgl" << std::endl;
+    painter = NULL;
     QImage wimg(1, 1, QImage::Format_Mono);
     wimg.fill(1);
     white = new QOpenGLTexture(wimg);
@@ -52,6 +42,22 @@ void POBWindow::paintGL() {
     curSubLayer = 0;
     glColor4f(0, 0, 0, 0);
     painter = new QPainter(this);
+
+    for (int i = 0;i < subScriptList.size();i++) {
+        bool clean = true;
+        if (subScriptList[i].get()) {
+            clean = false;
+            if (subScriptList[i]->isFinished()) {
+                std::cout << "Script finished!" << std::endl;
+                subScriptList[i]->onSubFinished(L, i);
+                subScriptList[i].reset();
+            }
+        }
+        if (clean) {
+            subScriptList.empty();
+        }
+    }
+
     lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
     lua_getfield(L, -1, "MainObject");
     lua_getfield(L, -1, "OnFrame");
@@ -515,7 +521,7 @@ static int l_imgHandleImageSize(lua_State* L)
 
 static int l_GetScreenSize(lua_State* L)
 {
-    QRect win = painter->window();
+    QRect win = pobwindow->painter->window();
     lua_pushinteger(L, win.width());
     lua_pushinteger(L, win.height());
     return 2;
@@ -559,6 +565,15 @@ static int l_SetDrawLayer(lua_State* L)
     return 0;
 }
 
+void ViewportCmd::execute() {
+    glViewport(x, pobwindow->painter->window().size().height() - y - h, w, h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, (float)w, (float)h, 0, -9999, 9999);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+}
+
 static int l_SetViewport(lua_State* L)
 {
     int n = lua_gettop(L);
@@ -569,7 +584,7 @@ static int l_SetViewport(lua_State* L)
         }
         pobwindow->AppendCmd(std::shared_ptr<Cmd>(new ViewportCmd((int)lua_tointeger(L, 1), (int)lua_tointeger(L, 2), (int)lua_tointeger(L, 3), (int)lua_tointeger(L, 4))));
     } else {
-        QSize s(painter->window().size());
+        QSize s(pobwindow->painter->window().size());
         pobwindow->AppendCmd(std::shared_ptr<Cmd>(new ViewportCmd(0, 0, s.width(), s.height())));
     }
     return 0;
@@ -577,7 +592,7 @@ static int l_SetViewport(lua_State* L)
 
 static int l_SetDrawColor(lua_State* L)
 {
-    pobwindow->LAssert(L, painter != NULL, "SetDrawColor() called outside of OnFrame");
+    pobwindow->LAssert(L, pobwindow->painter != NULL, "SetDrawColor() called outside of OnFrame");
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 1, "Usage: SetDrawColor(red, green, blue[, alpha]) or SetDrawColor(escapeStr)");
     float color[4];
@@ -604,7 +619,7 @@ static int l_SetDrawColor(lua_State* L)
 
 static int l_DrawImage(lua_State* L)
 {
-    pobwindow->LAssert(L, painter != NULL, "DrawImage() called outside of OnFrame");
+    pobwindow->LAssert(L, pobwindow->painter != NULL, "DrawImage() called outside of OnFrame");
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 5, "Usage: DrawImage({imgHandle|nil}, left, top, width, height[, tcLeft, tcTop, tcRight, tcBottom])");
     pobwindow->LAssert(L, lua_isnil(L, 1) || pobwindow->IsUserData(L, 1, "uiimghandlemeta"), "DrawImage() argument 1: expected image handle or nil, got %t", 1);
@@ -616,7 +631,7 @@ static int l_DrawImage(lua_State* L)
             if (!imgHandle->hnd->isCreated()) {
                 std::cout << "SHITTY TEXTURE " << imgHandle->img->text("fname").toStdString() << std::endl;
                 delete imgHandle->hnd;
-                imgHandle->hnd = white;
+                imgHandle->hnd = pobwindow->white;
             }
         }
         pobwindow->LAssert(L, imgHandle->hnd != NULL, "DrawImage(): image handle has no image loaded");
@@ -640,9 +655,23 @@ static int l_DrawImage(lua_State* L)
     return 0;
 }
 
+void DrawImageQuadCmd::execute() {
+    if (tex != NULL && tex->isCreated()) {
+        tex->bind();
+    } else {
+        pobwindow->white->bind();
+    }
+    glBegin(GL_TRIANGLE_FAN);
+    for (int v = 0; v < 4; v++) {
+        glTexCoord2d(s[v], t[v]);
+        glVertex2d(x[v], y[v]);
+    }
+    glEnd();
+}
+
 static int l_DrawImageQuad(lua_State* L)
 {
-    pobwindow->LAssert(L, painter != NULL, "DrawImageQuad() called outside of OnFrame");
+    pobwindow->LAssert(L, pobwindow->painter != NULL, "DrawImageQuad() called outside of OnFrame");
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 9, "Usage: DrawImageQuad({imgHandle|nil}, x1, y1, x2, y2, x3, y3, x4, y4[, s1, t1, s2, t2, s3, t3, s4, t4])");
     pobwindow->LAssert(L, lua_isnil(L, 1) || pobwindow->IsUserData(L, 1, "uiimghandlemeta"), "DrawImageQuad() argument 1: expected image handle or nil, got %t", 1);
@@ -654,7 +683,7 @@ static int l_DrawImageQuad(lua_State* L)
             if (!imgHandle->hnd->isCreated()) {
                 std::cout << "SHITTY TEXTURE" << imgHandle->img->text("fname").toStdString() << std::endl;
                 delete imgHandle->hnd;
-                imgHandle->hnd = white;
+                imgHandle->hnd = pobwindow->white;
             }
         }
         pobwindow->LAssert(L, imgHandle->hnd != NULL, "DrawImageQuad(): image handle has no image loaded");
@@ -678,9 +707,115 @@ static int l_DrawImageQuad(lua_State* L)
     return 0;
 }
 
+DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, const char *Text) : text(Text) {
+    if (text[0] == '^') {
+        switch(text[1].toLatin1()) {
+        case '0':
+            setCol(0.0f, 0.0f, 0.0f);
+            break;
+        case '1':
+            setCol(1.0f, 0.0f, 0.0f);
+            break;
+        case '2':
+            setCol(0.0f, 1.0f, 0.0f);
+            break;
+        case '3':
+            setCol(0.0f, 0.0f, 1.0f);
+            break;
+        case '4':
+            setCol(1.0f, 1.0f, 0.0f);
+            break;
+        case '5':
+            setCol(1.0f, 0.0f, 1.0f);
+            break;
+        case '6':
+            setCol(0.0f, 1.0f, 1.0f);
+            break;
+        case '7':
+            setCol(1.0f, 1.0f, 1.0f);
+            break;
+        case '8':
+            setCol(0.7f, 0.7f, 0.7f);
+            break;
+        case '9':
+            setCol(0.4f, 0.4f, 0.4f);
+            break;
+        case 'x':
+            int xr, xg, xb;
+            sscanf(text.toStdString().c_str() + 2, "%2x%2x%2x", &xr, &xg, &xb);
+            col[0] = xr / 255.0f;
+            col[1] = xg / 255.0f;
+            col[2] = xb / 255.0f;
+            col[3] = 1.0f;
+            break;
+        default:
+            break;
+        }
+    } else {
+        col[3] = 0;
+    }
+    int count = 0;
+    for (QRegularExpressionMatchIterator i = QRegularExpression("(\\^x.{6})|(\\^\\d)").globalMatch(text);i.hasNext();i.next()) {
+        count += 1;
+    }
+    if (count > 1) {
+        //std::cout << text.toStdString().c_str() << " " << count << std::endl;
+    }
+    text.remove(QRegularExpression("(\\^x.{6})|(\\^\\d)"));
+
+    QFont font("Inconsolata", Size - 5);
+    QFontMetrics fm(font);
+    Y += fm.height() * 0.9;
+    double width = fm.width(text);
+    switch (Align) {
+    case F_CENTRE:
+        X = floor((pobwindow->painter->window().size().width() - width) / 2.0f + X);
+        break;
+    case F_RIGHT:
+        X = floor(pobwindow->painter->window().size().width() - width - X);
+        break;
+    case F_CENTRE_X:
+        X = floor(X - width / 2.0f);
+        break;
+    case F_RIGHT_X:
+        X = floor(X - width) + 5;
+        break;
+    }
+
+    QRect br = fm.boundingRect(text);
+    QImage brush(fm.boundingRect(text).size(), QImage::Format_ARGB32);
+    brush.fill(QColor(0, 0, 0, 0));
+    tex = NULL;
+    if (brush.width() && brush.height()) {
+        QPainter p(&brush);
+        p.setPen(QColor(255, 255, 255, 255));
+        p.setFont(font);
+        p.drawText(br.left(), -br.top(), text);
+        p.end();
+        tex = new QOpenGLTexture(brush);
+    }
+    x[0] = X;
+    y[0] = Y - brush.height();
+    x[1] = X + brush.width();
+    y[1] = Y - brush.height();
+    x[2] = X + brush.width();
+    y[2] = Y;
+    x[3] = X;
+    y[3] = Y;
+
+    s[0] = 0;
+    t[0] = 0;
+    s[1] = 1;
+    t[1] = 0;
+    s[2] = 1;
+    t[2] = 1;
+    s[3] = 0;
+    t[3] = 1;
+}
+
 static int l_DrawString(lua_State* L)
 {
-    pobwindow->LAssert(L, painter != NULL, "DrawString() called outside of OnFrame");
+    pobwindow->LAssert(L, pobwindow->painter != NULL, "DrawString() called outside of OnFrame");
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 6, "Usage: DrawString(left, top, align, height, font, text)");
     pobwindow->LAssert(L, lua_isnumber(L, 1), "DrawString() argument 1: expected number, got %t", 1);
@@ -1101,44 +1236,26 @@ static int l_GetWorkDir(lua_State* L)
 
 static int l_LaunchSubScript(lua_State* L)
 {
-    return 0;
-    /*
-        int n = lua_gettop(L);
-      pobwindow->LAssert(L, n >= 3, "Usage: LaunchSubScript(scriptText, funcList, subList[, ...])");
-      for (int i = 1; i <= 3; i++) {
-      pobwindow->LAssert(L, lua_isstring(L, i), "LaunchSubScript() argument %d: expected string, got %t", i, i);
-      }
-      for (int i = 4; i <= n; i++) {
-      pobwindow->LAssert(L, lua_isnil(L, i) || lua_isboolean(L, i) || lua_isnumber(L, i) || lua_isstring(L, i), 
-      "LaunchSubScript() argument %d: only nil, boolean, number and string types can be passed to sub script", i);
-      }
-      notdword slot = -1;
-      for (notdword i = 0; i < pobwindow->subScriptSize; i++) {
-      if ( !pobwindow->subScriptList[i] ) {
-      slot = i;
-      break;
-      }
-      }
-      if (slot == -1) {
-      slot = pobwindow->subScriptSize;
-      pobwindow->subScriptSize<<= 1;
-      trealloc(pobwindow->subScriptList, pobwindow->subScriptSize);
-      for (notdword i = slot; i < pobwindow->subScriptSize; i++) {
-      pobwindow->subScriptList[i] = NULL;
-      }
-      }
-      pobwindow->subScriptList[slot] = ui_ISubScript::GetHandle(ui, slot);
-      if (pobwindow->subScriptList[slot]->Start()) {
-      lua_pushlightuserdata(L, (void*)slot);
-      } else {
-      lua_pushnil(L);
-      }
-      return 1;
-    */
+    int n = lua_gettop(L);
+    pobwindow->LAssert(L, n >= 3, "Usage: LaunchSubScript(scriptText, funcList, subList[, ...])");
+    for (int i = 1; i <= 3; i++) {
+        pobwindow->LAssert(L, lua_isstring(L, i), "LaunchSubScript() argument %d: expected string, got %t", i, i);
+    }
+    for (int i = 4; i <= n; i++) {
+        pobwindow->LAssert(L, lua_isnil(L, i) || lua_isboolean(L, i) || lua_isnumber(L, i) || lua_isstring(L, i), 
+                           "LaunchSubScript() argument %d: only nil, boolean, number and string types can be passed to sub script", i);
+    }
+    int slot = pobwindow->subScriptList.size();
+    pobwindow->subScriptList.append(std::shared_ptr<SubScript>(new SubScript(L)));
+    pobwindow->subScriptList[slot]->start();
+    std::cout << "Slot: " << slot << std::endl;
+    lua_pushinteger(L, slot);
+    return 1;
 }
 
 static int l_AbortSubScript(lua_State* L)
 {
+    std::cout << "SUBSCRIPT ABORT STUB" << std::endl;
     return 0;
     /*
         int n = lua_gettop(L);
@@ -1155,6 +1272,7 @@ static int l_AbortSubScript(lua_State* L)
 
 static int l_IsSubScriptRunning(lua_State* L)
 {
+    std::cout << "SUBSCRIPT RUNNING STUB" << std::endl;
     return 0;
     /*
         int n = lua_gettop(L);
@@ -1239,7 +1357,7 @@ static int l_ConPrintf(lua_State* L)
     lua_insert(L, 1);
     lua_call(L, n, 1);
     pobwindow->LAssert(L, lua_isstring(L, 1), "ConPrintf() error: string.format returned non-string");
-    std::cout << lua_tostring(L, 1) << std::endl;
+    //std::cout << lua_tostring(L, 1) << std::endl;
     //pobwindow->sys->con->Printf("%s\n", lua_tostring(L, 1));
     return 0;
 }

@@ -1,11 +1,12 @@
+#include <QClipboard>
 #include <QColor>
 #include <QDateTime>
-#include <QDir>
 #include <QKeyEvent>
 #include <QtGui/QGuiApplication>
 
 #include <iostream>
 
+#include <zlib.h>
 #include "main.h"
 #include "pobwindow.hpp"
 #include "subscript.hpp"
@@ -13,7 +14,6 @@
 lua_State *L;
 
 void POBWindow::initializeGL() {
-    std::cout << "initgl" << std::endl;
     painter = NULL;
     QImage wimg(1, 1, QImage::Format_Mono);
     wimg.fill(1);
@@ -179,13 +179,15 @@ void POBWindow::keyPressEvent(QKeyEvent *event) {
                 s[0] = event->key();
             }
             s[1] = 0;
-            lua_pop(L, 1);
-            lua_getfield(L, -1, "OnChar");
+            if (!(QGuiApplication::keyboardModifiers() & Qt::ControlModifier)) {
+                lua_pop(L, 1);
+                lua_getfield(L, -1, "OnChar");
+            }
             lua_pushstring(L, s);
 
         } else {
             lua_pushstring(L, "ASDF");
-            std::cout << "UNHANDLED KEYDOWN" << std::endl;
+            //std::cout << "UNHANDLED KEYDOWN" << std::endl;
         }
     }
     lua_insert(L, -2);
@@ -215,7 +217,7 @@ void POBWindow::keyReleaseEvent(QKeyEvent *event) {
         break;
     default:
         lua_pushstring(L, "ASDF");
-        std::cout << "UNHANDLED KEYUP" << std::endl;
+        //std::cout << "UNHANDLED KEYUP" << std::endl;
     }
     int result = lua_pcall(L, 2, 0, 0);
     if (result != 0) {
@@ -441,7 +443,7 @@ static int l_imgHandleLoad(lua_State* L)
     if (fileName.contains(':') || pobwindow->scriptWorkDir.isEmpty()) {
         fullFileName = fileName;
     } else {
-        fullFileName = pobwindow->scriptWorkDir + "\\" + fileName;
+        fullFileName = pobwindow->scriptWorkDir + QDir::separator() + fileName;
     }
     delete imgHandle->hnd;
     delete imgHandle->img;
@@ -628,7 +630,7 @@ static int l_DrawImage(lua_State* L)
         if (imgHandle->hnd == NULL) {
             imgHandle->hnd = new QOpenGLTexture(*(imgHandle->img));
             if (!imgHandle->hnd->isCreated()) {
-                std::cout << "SHITTY TEXTURE " << imgHandle->img->text("fname").toStdString() << std::endl;
+                //std::cout << "BROKEN TEXTURE " << imgHandle->img->text("fname").toStdString() << std::endl;
                 delete imgHandle->hnd;
                 imgHandle->hnd = pobwindow->white;
             }
@@ -680,7 +682,7 @@ static int l_DrawImageQuad(lua_State* L)
         if (imgHandle->hnd == NULL) {
             imgHandle->hnd = new QOpenGLTexture(*(imgHandle->img));
             if (!imgHandle->hnd->isCreated()) {
-                std::cout << "SHITTY TEXTURE" << imgHandle->img->text("fname").toStdString() << std::endl;
+                // std::cout << "BROKEN TEXTURE" << imgHandle->img->text("fname").toStdString() << std::endl;
                 delete imgHandle->hnd;
                 imgHandle->hnd = pobwindow->white;
             }
@@ -762,9 +764,9 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
     }
     text.remove(QRegularExpression("(\\^x.{6})|(\\^\\d)"));
 
-    QFont font("Inconsolata", Size - 5);
+    QFont font("DejaVuSans", Size - 6);
     QFontMetrics fm(font);
-    Y += floor(fm.height() * 0.9);
+    Y += fm.height();
     double width = fm.width(text);
     switch (Align) {
     case F_CENTRE:
@@ -848,7 +850,7 @@ static int l_DrawStringWidth(lua_State* L)
     text.remove(QRegExp("\\^x.{6}"));
     text.remove(QRegExp("\\^."));
 
-    QFont font(fontname, fontsize);
+    QFont font("DejaVuSans", fontsize);//fontname, fontsize);
     QFontMetrics fm(font);
     lua_pushinteger(L, fm.width(text));
     return 1;
@@ -1042,9 +1044,9 @@ static int l_IsKeyDown(lua_State* L)
     } else {
         int keys = QGuiApplication::keyboardModifiers();
         if (k == "CTRL") {
-            result =  keys & Qt::ControlModifier;
+            result = keys & Qt::ControlModifier;
         } else if (k == "SHIFT") {
-            result =  keys & Qt::ShiftModifier;
+            result = keys & Qt::ShiftModifier;
         } else if (k == "ALT") {
             result = keys & Qt::AltModifier;
         } else {
@@ -1063,97 +1065,87 @@ static int l_Copy(lua_State* L)
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 1, "Usage: Copy(string)");
     pobwindow->LAssert(L, lua_isstring(L, 1), "Copy() argument 1: expected string, got %t", 1);
-    //pobwindow->sys->ClipboardCopy(lua_tostring(L, 1));
+    QGuiApplication::clipboard()->setText(lua_tostring(L, 1));
     return 0;
 }
 
 static int l_Paste(lua_State* L)
 {
-    return 0;
-    /*
-    char* data = pobwindow->sys->ClipboardPaste();
-    if (data) {
-        lua_pushstring(L, data);
-        FreeString(data);
+    QString data = QGuiApplication::clipboard()->text();
+    if (data.size()) {
+        lua_pushstring(L, data.toStdString().c_str());
         return 1;
     } else {
         return 0;
     }
-    */
 }
 
 static int l_Deflate(lua_State* L)
 {
-    return 0;
-/*	ui_main_c* ui = GetUIPtr(L);
-	int n = lua_gettop(L);
-	pobwindow->LAssert(L, n >= 1, "Usage: Deflate(string)");
-	pobwindow->LAssert(L, lua_isstring(L, 1), "Deflate() argument 1: expected string, got %t", 1);
-	z_stream_s z;
-	z.zalloc = NULL;
-	z.zfree = NULL;
-	deflateInit(&z, 9);
-	size_t inLen;
-	byte* in = (byte*)lua_tolstring(L, 1, &inLen);
-	int outSz = deflateBound(&z, inLen);
-	byte* out = new byte[outSz];
-	z.next_in = in;
-	z.avail_in = inLen;
-	z.next_out = out;
-	z.avail_out = outSz;
-	int err = deflate(&z, Z_FINISH);
-	deflateEnd(&z);
-	if (err == Z_STREAM_END) {
+    int n = lua_gettop(L);
+    pobwindow->LAssert(L, n >= 1, "Usage: Deflate(string)");
+    pobwindow->LAssert(L, lua_isstring(L, 1), "Deflate() argument 1: expected string, got %t", 1);
+    z_stream_s z;
+    z.zalloc = NULL;
+    z.zfree = NULL;
+    deflateInit(&z, 9);
+    size_t inLen;
+    Byte* in = (Byte*)lua_tolstring(L, 1, &inLen);
+    int outSz = deflateBound(&z, inLen);
+    Byte* out = new Byte[outSz];
+    z.next_in = in;
+    z.avail_in = inLen;
+    z.next_out = out;
+    z.avail_out = outSz;
+    int err = deflate(&z, Z_FINISH);
+    deflateEnd(&z);
+    if (err == Z_STREAM_END) {
         lua_pushlstring(L, (const char*)out, z.total_out);
         return 1;
-	} else {
+    } else {
         lua_pushnil(L);
         lua_pushstring(L, zError(err));
         return 2;
-	}
-*/
+    }
 }
 
 static int l_Inflate(lua_State* L)
 {
-    return 0;
-    /*
-        int n = lua_gettop(L);
-      pobwindow->LAssert(L, n >= 1, "Usage: Inflate(string)");
-      pobwindow->LAssert(L, lua_isstring(L, 1), "Inflate() argument 1: expected string, got %t", 1);
-      size_t inLen;
-      byte* in = (byte*)lua_tolstring(L, 1, &inLen);
-      int outSz = inLen * 4;
-      byte* out = new byte[outSz];
-      z_stream_s z;
-      z.next_in = in;
-      z.avail_in = inLen;
-      z.zalloc = NULL;
-      z.zfree = NULL;
-      z.next_out = out;
-      z.avail_out = outSz;
-      inflateInit(&z);
-      int err;
-      while ((err = inflate(&z, Z_NO_FLUSH)) == Z_OK) {
-      if (z.avail_out == 0) {
-      // Output buffer filled, embiggen it
-      int newSz = outSz << 1;
-      trealloc(out, newSz);
-      z.next_out = out + outSz;
-      z.avail_out = outSz;
-      outSz = newSz;
+    int n = lua_gettop(L);
+    pobwindow->LAssert(L, n >= 1, "Usage: Inflate(string)");
+    pobwindow->LAssert(L, lua_isstring(L, 1), "Inflate() argument 1: expected string, got %t", 1);
+    size_t inLen;
+    Byte* in = (Byte*)lua_tolstring(L, 1, &inLen);
+    int outSz = inLen * 4;
+    Byte* out = new Byte[outSz];
+    z_stream_s z;
+    z.next_in = in;
+    z.avail_in = inLen;
+    z.zalloc = NULL;
+    z.zfree = NULL;
+    z.next_out = out;
+    z.avail_out = outSz;
+    inflateInit(&z);
+    int err;
+    while ((err = inflate(&z, Z_NO_FLUSH)) == Z_OK) {
+        if (z.avail_out == 0) {
+            // Output buffer filled, embiggen it
+            int newSz = outSz << 1;
+            realloc(out, newSz);
+            z.next_out = out + outSz;
+            z.avail_out = outSz;
+            outSz = newSz;
+        }
       }
-      }
-      inflateEnd(&z);
-      if (err == Z_STREAM_END) {
-      lua_pushlstring(L, (const char*)out, z.total_out);
-      return 1;
-      } else {
-      lua_pushnil(L);
-      lua_pushstring(L, zError(err));
-      return 2;
-      }
-    */
+    inflateEnd(&z);
+    if (err == Z_STREAM_END) {
+        lua_pushlstring(L, (const char*)out, z.total_out);
+        return 1;
+    } else {
+        lua_pushnil(L);
+        lua_pushstring(L, zError(err));
+        return 2;
+    }
 }
 
 static int l_GetTime(lua_State* L)
@@ -1165,22 +1157,19 @@ static int l_GetTime(lua_State* L)
 
 static int l_GetScriptPath(lua_State* L)
 {
-    lua_pushstring(L, "/home/phil/projects/pob/PathOfBuilding"); // FIXME
-//    lua_pushstring(L, pobwindow->scriptPath);
+    lua_pushstring(L, pobwindow->scriptPath.toStdString().c_str());
     return 1;
 }
 
 static int l_GetRuntimePath(lua_State* L)
 {
-    lua_pushstring(L, "/home/phil/projects/pob/PathOfBuilding"); // FIXME
-//    lua_pushstring(L, pobwindow->sys->basePath);
+    lua_pushstring(L, pobwindow->basePath.toStdString().c_str());
     return 1;
 }
 
 static int l_GetUserPath(lua_State* L)
 {
-    lua_pushstring(L, "/home/phil/projects/pob/PathOfBuilding"); // FIXME
-//    lua_pushstring(L, pobwindow->sys->userPath);
+    lua_pushstring(L, pobwindow->userPath.toStdString().c_str());
     return 1;
 }
 
@@ -1213,23 +1202,15 @@ static int l_SetWorkDir(lua_State* L)
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 1, "Usage: SetWorkDir(path)");
     pobwindow->LAssert(L, lua_isstring(L, 1), "SetWorkDir() argument 1: expected string, got %t", 1);
-    return 0; // FIXME
-    /*
-    const char* newWorkDir = lua_tostring(L, 1);
-    if ( !pobwindow->sys->SetWorkDir(newWorkDir) ) {
-        if (pobwindow->scriptWorkDir) {
-            FreeString(pobwindow->scriptWorkDir);
-        }
-        pobwindow->scriptWorkDir = AllocString(newWorkDir);
+    if (QDir::setCurrent(lua_tostring(L, 1))) {
+        pobwindow->scriptWorkDir = lua_tostring(L, 1);
     }
     return 0;
-    */
 }
 
 static int l_GetWorkDir(lua_State* L)
 {
-    lua_pushstring(L, "/home/phil/projects/pob/PathOfBuilding"); // FIXME
-//    lua_pushstring(L, pobwindow->scriptWorkDir);
+    lua_pushstring(L, QDir::currentPath().toStdString().c_str());
     return 1;
 }
 
@@ -1292,9 +1273,9 @@ static int l_LoadModule(lua_State* L)
     if (!fileName.endsWith(".lua")) {
         fileName = fileName + ".lua";
     }
-//    pobwindow->sys->SetWorkDir(pobwindow->scriptPath);
+    QDir::setCurrent(pobwindow->scriptPath);
     int err = luaL_loadfile(L, fileName.toStdString().c_str());
-//    pobwindow->sys->SetWorkDir(pobwindow->scriptWorkDir);
+    QDir::setCurrent(pobwindow->scriptWorkDir);
     pobwindow->LAssert(L, err == 0, "LoadModule() error loading '%s':\n%s", fileName.toStdString().c_str(), lua_tostring(L, -1));
     lua_replace(L, 1);	// Replace module name with module main chunk
     lua_call(L, n - 1, LUA_MULTRET);
@@ -1310,9 +1291,9 @@ static int l_PLoadModule(lua_State* L)
     if (!fileName.endsWith(".lua")) {
         fileName = fileName + ".lua";
     }
-    //pobwindow->sys->SetWorkDir(pobwindow->scriptPath);
+    QDir::setCurrent(pobwindow->scriptPath);
     int err = luaL_loadfile(L, fileName.toStdString().c_str());
-    //pobwindow->sys->SetWorkDir(pobwindow->scriptWorkDir);
+    QDir::setCurrent(pobwindow->scriptWorkDir);
     if (err) {
         return 1;
     }
@@ -1521,12 +1502,10 @@ int main(int argc, char **argv)
 
     pobwindow = new POBWindow;
 
-    std::cout << "settin up" << std::endl;
     L = luaL_newstate();
     luaL_openlibs(L);
-    //std::cout << "JIT DISABLE: " << luaJIT_setmode(L, 0, LUAJIT_MODE_ENGINE|LUAJIT_MODE_OFF) << std::endl;
+    luaJIT_setmode(L, 0, LUAJIT_MODE_ENGINE|LUAJIT_MODE_OFF);
 
-    std::cout << "stated" << std::endl;
     // Callbacks
     lua_newtable(L);		// Callbacks table
     lua_pushvalue(L, -1);	// Push callbacks table
@@ -1646,6 +1625,7 @@ int main(int argc, char **argv)
     if (result != 0) {
         lua_error(L);
     }
+    pobwindow->resize(800, 600);
     pobwindow->show();
     return app.exec();
 }

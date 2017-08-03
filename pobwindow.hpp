@@ -1,3 +1,4 @@
+#include <QDir>
 #include <QOpenGLWindow>
 #include <QPainter>
 #include <memory>
@@ -28,6 +29,10 @@ public:
 //        theformat.setAlphaBufferSize(8);
 //        std::cout << theformat.hasAlpha() << std::endl;
 //        setFormat(theformat);
+        scriptPath = QDir::currentPath();
+        scriptWorkDir = QDir::currentPath();
+        basePath = QDir::currentPath();
+        userPath = QDir::currentPath();
     }
 
 //    POBWindow() : QOpenGLWindow() {
@@ -58,7 +63,10 @@ public:
     void AppendCmd(std::shared_ptr<Cmd> cmd);
     void DrawColor(const float col[4] = NULL);
     void DrawColor(uint32_t col);
+    QString scriptPath;
     QString scriptWorkDir;
+    QString basePath;
+    QString userPath;
     int curLayer;
     int curSubLayer;
     float drawColor[4];

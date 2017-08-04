@@ -1131,7 +1131,14 @@ static int l_Inflate(lua_State* L)
         if (z.avail_out == 0) {
             // Output buffer filled, embiggen it
             int newSz = outSz << 1;
-            realloc(out, newSz);
+            Byte *newOut = (Byte *)realloc(out, newSz);
+            if (newOut) {
+                out = newOut;
+            } else {
+                // PANIC
+                delete out;
+                return 0;
+            }
             z.next_out = out + outSz;
             z.avail_out = outSz;
             outSz = newSz;

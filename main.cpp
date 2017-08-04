@@ -764,7 +764,7 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
     }
     text.remove(QRegularExpression("(\\^x.{6})|(\\^\\d)"));
 
-    QFont font("DejaVuSans", Size - 6);
+    QFont font(pobwindow->fontName, Size + pobwindow->fontFudge);
     QFontMetrics fm(font);
     Y += fm.height();
     double width = fm.width(text);
@@ -843,14 +843,14 @@ static int l_DrawStringWidth(lua_State* L)
     pobwindow->LAssert(L, lua_isstring(L, 2), "DrawStringWidth() argument 2: expected string, got %t", 2);
     pobwindow->LAssert(L, lua_isstring(L, 3), "DrawStringWidth() argument 3: expected string, got %t", 3);
     static const char* fontMap[4] = { "FIXED", "VAR", "VAR BOLD", NULL };
-    int fontsize = lua_tointeger(L, 1) - 6;
+    int fontsize = lua_tointeger(L, 1);
     QString fontname = lua_tostring(L, 2);
     QString text(lua_tostring(L, 3));
 
     text.remove(QRegExp("\\^x.{6}"));
     text.remove(QRegExp("\\^."));
 
-    QFont font("DejaVuSans", fontsize);//fontname, fontsize);
+    QFont font(pobwindow->fontName, fontsize + pobwindow->fontFudge);//fontname, fontsize);
     QFontMetrics fm(font);
     lua_pushinteger(L, fm.width(text));
     return 1;
@@ -1500,7 +1500,20 @@ int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
 
+    QStringList args = app.arguments();
+
     pobwindow = new POBWindow;
+
+    if (args.size() > 1) {
+        bool ok;
+        int ff = args[1].toInt(&ok);
+        if (ok) {
+            pobwindow->fontFudge = ff;
+        }
+    }
+    if (args.size() > 2) {
+        pobwindow->fontName = args[2];
+    }
 
     L = luaL_newstate();
     luaL_openlibs(L);

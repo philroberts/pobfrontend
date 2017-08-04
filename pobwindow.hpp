@@ -33,6 +33,9 @@ public:
         scriptWorkDir = QDir::currentPath();
         basePath = QDir::currentPath();
         userPath = QDir::currentPath();
+
+        fontFudge = 0;
+        fontName = "Inconsolata";
     }
 
 //    POBWindow() : QOpenGLWindow() {
@@ -69,6 +72,8 @@ public:
     QString userPath;
     int curLayer;
     int curSubLayer;
+    int fontFudge;
+    QString fontName;
     float drawColor[4];
     QMap<QPair<int, int>, QList<std::shared_ptr<Cmd>>> layers;
     QList<std::shared_ptr<SubScript>> subScriptList;

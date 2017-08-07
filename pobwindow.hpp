@@ -73,10 +73,12 @@ public:
     int curLayer;
     int curSubLayer;
     int fontFudge;
+    int width;
+    int height;
+    bool isDrawing;
     QString fontName;
     float drawColor[4];
     QMap<QPair<int, int>, QList<std::shared_ptr<Cmd>>> layers;
     QList<std::shared_ptr<SubScript>> subScriptList;
-    QPainter *painter;
     QOpenGLTexture *white;
 };

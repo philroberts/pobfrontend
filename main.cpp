@@ -14,7 +14,6 @@
 lua_State *L;
 
 void POBWindow::initializeGL() {
-    painter = NULL;
     QImage wimg(1, 1, QImage::Format_Mono);
     wimg.fill(1);
     white = new QOpenGLTexture(wimg);
@@ -33,15 +32,17 @@ void POBWindow::initializeGL() {
 }
 
 void POBWindow::resizeGL(int w, int h) {
+    width = w;
+    height = h;
 }
 
 void POBWindow::paintGL() {
+    isDrawing = true;
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     layers.clear();
     curLayer = 0;
     curSubLayer = 0;
     glColor4f(0, 0, 0, 0);
-    painter = new QPainter(this);
 
     bool clean = true;
     for (int i = 0;i < subScriptList.size();i++) {
@@ -65,7 +66,6 @@ void POBWindow::paintGL() {
     if (result != 0) {
         lua_error(L);
     }
-    painter->beginNativePainting();
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     for (auto layer : layers) {
@@ -73,10 +73,8 @@ void POBWindow::paintGL() {
             cmd->execute();
         }
     }
-    painter->endNativePainting();
-    delete painter;
-    painter = NULL;
     update();
+    isDrawing = false;
 }
 
 void POBWindow::mouseMoveEvent(QMouseEvent *event) {
@@ -282,9 +280,6 @@ void POBWindow::DrawColor(const float col[4]) {
         drawColor[3] = 1.0f;
     }
     AppendCmd(std::shared_ptr<Cmd>(new ColorCmd(drawColor)));
-    /*QColor qcol(drawColor[0] * 255, drawColor[1] * 255, drawColor[2] * 255, drawColor[3] * 255);
-    painter->setPen(qcol);
-    painter->setBrush(qcol);*/
 }
 
 void POBWindow::DrawColor(uint32_t col) {
@@ -522,9 +517,8 @@ static int l_imgHandleImageSize(lua_State* L)
 
 static int l_GetScreenSize(lua_State* L)
 {
-    QRect win = pobwindow->painter->window();
-    lua_pushinteger(L, win.width());
-    lua_pushinteger(L, win.height());
+    lua_pushinteger(L, pobwindow->width);
+    lua_pushinteger(L, pobwindow->height);
     return 2;
 }
 
@@ -567,7 +561,7 @@ static int l_SetDrawLayer(lua_State* L)
 }
 
 void ViewportCmd::execute() {
-    glViewport(x, pobwindow->painter->window().size().height() - y - h, w, h);
+    glViewport(x, pobwindow->height - y - h, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, (float)w, (float)h, 0, -9999, 9999);
@@ -585,15 +579,14 @@ static int l_SetViewport(lua_State* L)
         }
         pobwindow->AppendCmd(std::shared_ptr<Cmd>(new ViewportCmd((int)lua_tointeger(L, 1), (int)lua_tointeger(L, 2), (int)lua_tointeger(L, 3), (int)lua_tointeger(L, 4))));
     } else {
-        QSize s(pobwindow->painter->window().size());
-        pobwindow->AppendCmd(std::shared_ptr<Cmd>(new ViewportCmd(0, 0, s.width(), s.height())));
+        pobwindow->AppendCmd(std::shared_ptr<Cmd>(new ViewportCmd(0, 0, pobwindow->width, pobwindow->height)));
     }
     return 0;
 }
 
 static int l_SetDrawColor(lua_State* L)
 {
-    pobwindow->LAssert(L, pobwindow->painter != NULL, "SetDrawColor() called outside of OnFrame");
+    pobwindow->LAssert(L, pobwindow->isDrawing, "SetDrawColor() called outside of OnFrame");
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 1, "Usage: SetDrawColor(red, green, blue[, alpha]) or SetDrawColor(escapeStr)");
     float color[4];
@@ -620,7 +613,7 @@ static int l_SetDrawColor(lua_State* L)
 
 static int l_DrawImage(lua_State* L)
 {
-    pobwindow->LAssert(L, pobwindow->painter != NULL, "DrawImage() called outside of OnFrame");
+    pobwindow->LAssert(L, pobwindow->isDrawing, "DrawImage() called outside of OnFrame");
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 5, "Usage: DrawImage({imgHandle|nil}, left, top, width, height[, tcLeft, tcTop, tcRight, tcBottom])");
     pobwindow->LAssert(L, lua_isnil(L, 1) || pobwindow->IsUserData(L, 1, "uiimghandlemeta"), "DrawImage() argument 1: expected image handle or nil, got %t", 1);
@@ -672,7 +665,7 @@ void DrawImageQuadCmd::execute() {
 
 static int l_DrawImageQuad(lua_State* L)
 {
-    pobwindow->LAssert(L, pobwindow->painter != NULL, "DrawImageQuad() called outside of OnFrame");
+    pobwindow->LAssert(L, pobwindow->isDrawing, "DrawImageQuad() called outside of OnFrame");
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 9, "Usage: DrawImageQuad({imgHandle|nil}, x1, y1, x2, y2, x3, y3, x4, y4[, s1, t1, s2, t2, s3, t3, s4, t4])");
     pobwindow->LAssert(L, lua_isnil(L, 1) || pobwindow->IsUserData(L, 1, "uiimghandlemeta"), "DrawImageQuad() argument 1: expected image handle or nil, got %t", 1);
@@ -770,10 +763,10 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
     double width = fm.width(text);
     switch (Align) {
     case F_CENTRE:
-        X = floor((pobwindow->painter->window().size().width() - width) / 2.0f + X);
+        X = floor((pobwindow->width - width) / 2.0f + X);
         break;
     case F_RIGHT:
-        X = floor(pobwindow->painter->window().size().width() - width - X);
+        X = floor(pobwindow->width - width - X);
         break;
     case F_CENTRE_X:
         X = floor(X - width / 2.0f);
@@ -816,7 +809,7 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
 
 static int l_DrawString(lua_State* L)
 {
-    pobwindow->LAssert(L, pobwindow->painter != NULL, "DrawString() called outside of OnFrame");
+    pobwindow->LAssert(L, pobwindow->isDrawing, "DrawString() called outside of OnFrame");
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 6, "Usage: DrawString(left, top, align, height, font, text)");
     pobwindow->LAssert(L, lua_isnumber(L, 1), "DrawString() argument 1: expected number, got %t", 1);

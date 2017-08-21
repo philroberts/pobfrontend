@@ -153,13 +153,13 @@ void POBWindow::wheelEvent(QWheelEvent *event) {
     }
 }
 
-void POBWindow::keyPressEvent(QKeyEvent *event) {
-    lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
-    lua_getfield(L, -1, "MainObject");
-    lua_getfield(L, -1, "OnKeyDown");
-    switch (event->key()) {
+bool pushKeyString(int keycode) {
+    switch (keycode) {
     case Qt::Key_Escape:
         lua_pushstring(L, "ESCAPE");
+        break;
+    case Qt::Key_Tab:
+        lua_pushstring(L, "TAB");
         break;
     case Qt::Key_Return:
     case Qt::Key_Enter:
@@ -168,7 +168,44 @@ void POBWindow::keyPressEvent(QKeyEvent *event) {
     case Qt::Key_Backspace:
         lua_pushstring(L, "BACK");
         break;
+    case Qt::Key_Delete:
+        lua_pushstring(L, "DELETE");
+        break;
+    case Qt::Key_Home:
+        lua_pushstring(L, "HOME");
+        break;
+    case Qt::Key_End:
+        lua_pushstring(L, "END");
+        break;
+    case Qt::Key_Up:
+        lua_pushstring(L, "UP");
+        break;
+    case Qt::Key_Down:
+        lua_pushstring(L, "DOWN");
+        break;
+    case Qt::Key_Left:
+        lua_pushstring(L, "LEFT");
+        break;
+    case Qt::Key_Right:
+        lua_pushstring(L, "RIGHT");
+        break;
+    case Qt::Key_PageUp:
+        lua_pushstring(L, "PAGEUP");
+        break;
+    case Qt::Key_PageDown:
+        lua_pushstring(L, "PAGEDOWN");
+        break;
     default:
+        return false;
+    }
+    return true;
+}
+
+void POBWindow::keyPressEvent(QKeyEvent *event) {
+    lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
+    lua_getfield(L, -1, "MainObject");
+    lua_getfield(L, -1, "OnKeyDown");
+    if (!pushKeyString(event->key())) {
         if (event->key() >= ' ' && event->key() <= '~') {
             char s[2];
             if (event->key() >= 'A' && event->key() <= 'Z' && !(QGuiApplication::keyboardModifiers() & Qt::ShiftModifier)) {
@@ -202,18 +239,7 @@ void POBWindow::keyReleaseEvent(QKeyEvent *event) {
     lua_getfield(L, -1, "MainObject");
     lua_getfield(L, -1, "OnKeyUp");
     lua_insert(L, -2);
-    switch (event->key()) {
-    case Qt::Key_Escape:
-        lua_pushstring(L, "ESCAPE");
-        break;
-    case Qt::Key_Return:
-    case Qt::Key_Enter:
-        lua_pushstring(L, "RETURN");
-        break;
-    case Qt::Key_Backspace:
-        lua_pushstring(L, "BACK");
-        break;
-    default:
+    if (!pushKeyString(event->key())) {
         lua_pushstring(L, "ASDF");
         //std::cout << "UNHANDLED KEYUP" << std::endl;
     }

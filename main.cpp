@@ -66,8 +66,6 @@ void POBWindow::paintGL() {
     if (result != 0) {
         lua_error(L);
     }
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     for (auto layer : layers) {
         for (auto cmd : layer) {
             cmd->execute();

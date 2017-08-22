@@ -799,12 +799,13 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
 
     QRect br = fm.boundingRect(text);
     QImage brush(fm.boundingRect(text).size(), QImage::Format_ARGB32);
-    brush.fill(QColor(0, 0, 0, 0));
+    brush.fill(QColor(255, 255, 255, 0));
     tex = NULL;
     if (brush.width() && brush.height()) {
         QPainter p(&brush);
         p.setPen(QColor(255, 255, 255, 255));
         p.setFont(font);
+        p.setCompositionMode(QPainter::CompositionMode_Plus);
         p.drawText(br.left(), -br.top(), text);
         p.end();
         tex = new QOpenGLTexture(brush);

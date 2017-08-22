@@ -761,10 +761,7 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
         case 'x':
             int xr, xg, xb;
             sscanf(text.toStdString().c_str() + 2, "%2x%2x%2x", &xr, &xg, &xb);
-            col[0] = xr / 255.0f;
-            col[1] = xg / 255.0f;
-            col[2] = xb / 255.0f;
-            col[3] = 1.0f;
+            setCol(xr / 255.0f, xg / 255.0f, xb / 255.0f);
             break;
         default:
             break;

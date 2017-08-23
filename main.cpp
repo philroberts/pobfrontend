@@ -842,7 +842,6 @@ static int l_DrawString(lua_State* L)
     pobwindow->LAssert(L, lua_isstring(L, 6), "DrawString() argument 6: expected string, got %t", 6);
     static const char* alignMap[6] = { "LEFT", "CENTER", "RIGHT", "CENTER_X", "RIGHT_X", NULL };
     static const char* fontMap[4] = { "FIXED", "VAR", "VAR BOLD", NULL };
-    //std::cout << "Drawstring: " << lua_tostring(L, 6) << " | align: " << lua_tostring(L, 3) << std::endl;
     pobwindow->AppendCmd(std::shared_ptr<Cmd>(new DrawStringCmd(
         (float)lua_tonumber(L, 1), (float)lua_tonumber(L, 2), luaL_checkoption(L, 3, "LEFT", alignMap), 
         (int)lua_tointeger(L, 4), luaL_checkoption(L, 5, "FIXED", fontMap), lua_tostring(L, 6)

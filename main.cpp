@@ -795,7 +795,6 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
     QFont font(fontName);
     font.setPixelSize(Size + pobwindow->fontFudge);
     QFontMetrics fm(font);
-    Y += fm.height();
     double width = fm.width(text);
     switch (Align) {
     case F_CENTRE:
@@ -813,7 +812,7 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
     }
 
     QRect br = fm.boundingRect(text);
-    QImage brush(fm.boundingRect(text).size(), QImage::Format_ARGB32);
+    QImage brush(fm.size(0, text), QImage::Format_ARGB32);
     brush.fill(QColor(255, 255, 255, 0));
     tex = NULL;
     if (brush.width() && brush.height()) {
@@ -821,18 +820,18 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
         p.setPen(QColor(255, 255, 255, 255));
         p.setFont(font);
         p.setCompositionMode(QPainter::CompositionMode_Plus);
-        p.drawText(br.left(), -br.top(), text);
+        p.drawText(0, 0, fm.size(0, text).width(), fm.size(0, text).height(), 0, text);
         p.end();
         tex = new QOpenGLTexture(brush);
     }
     x[0] = X;
-    y[0] = Y - brush.height();
+    y[0] = Y;
     x[1] = X + brush.width();
-    y[1] = Y - brush.height();
+    y[1] = Y;
     x[2] = X + brush.width();
-    y[2] = Y;
+    y[2] = Y + brush.height();
     x[3] = X;
-    y[3] = Y;
+    y[3] = Y + brush.height();
 
     s[0] = 0;
     t[0] = 0;
@@ -888,9 +887,7 @@ static int l_DrawStringWidth(lua_State* L)
     QFont font(fontName);
     font.setPixelSize(fontsize + pobwindow->fontFudge);
     QFontMetrics fm(font);
-    lua_pushinteger(L, fm.width(text));
-    return 1;
-//    lua_pushinteger(L, pobwindow->DrawStringWidth((int)lua_tointeger(L, 1), luaL_checkoption(L, 2, "FIXED", fontMap), lua_tostring(L, 3)));
+    lua_pushinteger(L, fm.size(0, text).width());
     return 1;
 }
 

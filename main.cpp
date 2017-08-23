@@ -1,6 +1,7 @@
 #include <QClipboard>
 #include <QColor>
 #include <QDateTime>
+#include <QFontDatabase>
 #include <QKeyEvent>
 #include <QtGui/QGuiApplication>
 
@@ -778,7 +779,21 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
     }
     text.remove(QRegularExpression("(\\^x.{6})|(\\^\\d)"));
 
-    QFont font(pobwindow->fontName, Size + pobwindow->fontFudge);
+    QString fontName;
+    switch (Font) {
+    case 1:
+        fontName = "Liberation Sans";
+        break;
+    case 2:
+        fontName = "Liberation Sans Bold";
+        break;
+    case 0:
+    default:
+        fontName = "Bitstream Vera Mono";
+        break;
+    }
+    QFont font(fontName);
+    font.setPixelSize(Size + pobwindow->fontFudge);
     QFontMetrics fm(font);
     Y += fm.height();
     double width = fm.width(text);
@@ -856,15 +871,22 @@ static int l_DrawStringWidth(lua_State* L)
     pobwindow->LAssert(L, lua_isnumber(L, 1), "DrawStringWidth() argument 1: expected number, got %t", 1);
     pobwindow->LAssert(L, lua_isstring(L, 2), "DrawStringWidth() argument 2: expected string, got %t", 2);
     pobwindow->LAssert(L, lua_isstring(L, 3), "DrawStringWidth() argument 3: expected string, got %t", 3);
-    static const char* fontMap[4] = { "FIXED", "VAR", "VAR BOLD", NULL };
     int fontsize = lua_tointeger(L, 1);
-    QString fontname = lua_tostring(L, 2);
+    QString fontName = lua_tostring(L, 2);
+    if (fontName == "VAR") {
+        fontName = "Liberation Sans";
+    } else if (fontName == "VAR BOLD") {
+        fontName = "Liberation Sans Bold";
+    } else {
+        fontName = "Bitstream Vera Mono";
+    }
     QString text(lua_tostring(L, 3));
 
     text.remove(QRegExp("\\^x.{6}"));
     text.remove(QRegExp("\\^."));
 
-    QFont font(pobwindow->fontName, fontsize + pobwindow->fontFudge);//fontname, fontsize);
+    QFont font(fontName);
+    font.setPixelSize(fontsize + pobwindow->fontFudge);
     QFontMetrics fm(font);
     lua_pushinteger(L, fm.width(text));
     return 1;
@@ -1661,6 +1683,9 @@ int main(int argc, char **argv)
     }
     pobwindow->resize(800, 600);
     pobwindow->show();
+    QFontDatabase::addApplicationFont("VeraMono.ttf");
+    QFontDatabase::addApplicationFont("LiberationSans-Regular.ttf");
+    QFontDatabase::addApplicationFont("LiberationSans-Bold.ttf");
     return app.exec();
 }
 

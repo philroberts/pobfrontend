@@ -899,9 +899,39 @@ static int l_DrawStringCursorIndex(lua_State* L)
     pobwindow->LAssert(L, lua_isstring(L, 3), "DrawStringCursorIndex() argument 3: expected string, got %t", 3);
     pobwindow->LAssert(L, lua_isnumber(L, 4), "DrawStringCursorIndex() argument 4: expected number, got %t", 4);
     pobwindow->LAssert(L, lua_isnumber(L, 5), "DrawStringCursorIndex() argument 5: expected number, got %t", 5);
-    static const char* fontMap[4] = { "FIXED", "VAR", "VAR BOLD", NULL };
-//    lua_pushinteger(L, pobwindow->DrawStringCursorIndex((int)lua_tointeger(L, 1), luaL_checkoption(L, 2, "FIXED", fontMap), lua_tostring(L, 3), (int)lua_tointeger(L, 4), (int)lua_tointeger(L, 5)) + 1);
-    lua_pushinteger(L, 5);
+
+    int fontsize = lua_tointeger(L, 1);
+    QString fontName = lua_tostring(L, 2);
+    if (fontName == "VAR") {
+        fontName = "Liberation Sans";
+    } else if (fontName == "VAR BOLD") {
+        fontName = "Liberation Sans Bold";
+    } else {
+        fontName = "Bitstream Vera Mono";
+    }
+    QString text(lua_tostring(L, 3));
+
+    text.remove(QRegExp("\\^x.{6}"));
+    text.remove(QRegExp("\\^."));
+
+    QStringList texts = text.split("\n");
+    QFont font(fontName);
+    font.setPixelSize(fontsize + pobwindow->fontFudge);
+    QFontMetrics fm(font);
+    int curX = lua_tointeger(L, 4);
+    int curY = lua_tointeger(L, 5);
+    int yidx = std::max(0, std::min(texts.size() - 1, curY / fm.lineSpacing()));
+    text = texts[yidx];
+    int i = 0;
+    for (;i <= text.size();i++) {
+        if (fm.size(0, text.left(i)).width() > curX) {
+            break;
+        }
+    }
+    for (int y = 0;y < yidx;y++) {
+        i += texts[y].size() + 1;
+    }
+    lua_pushinteger(L, i);
     return 1;
 }
 

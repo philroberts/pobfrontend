@@ -811,7 +811,6 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
         break;
     }
 
-    QRect br = fm.boundingRect(text);
     QImage brush(fm.size(0, text), QImage::Format_ARGB32);
     brush.fill(QColor(255, 255, 255, 0));
     tex = NULL;

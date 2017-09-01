@@ -5,6 +5,8 @@
 #include <QRegularExpression>
 #include <QtCore/qmath.h>
 
+#include <memory>
+
 // Font alignment
 enum r_fontAlign_e {
 	F_LEFT,
@@ -58,12 +60,12 @@ class ColorCmd : public Cmd {
 class DrawImageQuadCmd : public Cmd {
   public:
     DrawImageQuadCmd() {}
-  DrawImageQuadCmd(QOpenGLTexture *Tex, float X0, float Y0, float X1, float Y1, float X2, float Y2, float X3, float Y3, float S0 = 0, float T0 = 0, float S1 = 1, float T1 = 0, float S2 = 1, float T2 = 1, float S3 = 0, float T3 = 1) : x {X0, X1, X2, X3}, y {Y0, Y1, Y2, Y3}, s {S0, S1, S2, S3}, t {T0, T1, T2, T3}, tex(Tex) {
+  DrawImageQuadCmd(std::shared_ptr<QOpenGLTexture> Tex, float X0, float Y0, float X1, float Y1, float X2, float Y2, float X3, float Y3, float S0 = 0, float T0 = 0, float S1 = 1, float T1 = 0, float S2 = 1, float T2 = 1, float S3 = 0, float T3 = 1) : x {X0, X1, X2, X3}, y {Y0, Y1, Y2, Y3}, s {S0, S1, S2, S3}, t {T0, T1, T2, T3}, tex(Tex) {
     }
 
     void execute();
   protected:
-    QOpenGLTexture *tex;
+    std::shared_ptr<QOpenGLTexture> tex;
     float x[4];
     float y[4];
     float s[4];
@@ -72,7 +74,7 @@ class DrawImageQuadCmd : public Cmd {
 
 class DrawImageCmd : public DrawImageQuadCmd {
   public:
-  DrawImageCmd(QOpenGLTexture *tex, float x, float y, float w, float h, float s1 = 0, float t1 = 0, float s2 = 1.0f, float t2 = 1.0f) : DrawImageQuadCmd(tex, x, y, x + w, y, x + w, y + h, x, y + h, s1, t1, s2, t1, s2, t2, s1, t2) {
+  DrawImageCmd(std::shared_ptr<QOpenGLTexture> tex, float x, float y, float w, float h, float s1 = 0, float t1 = 0, float s2 = 1.0f, float t2 = 1.0f) : DrawImageQuadCmd(tex, x, y, x + w, y, x + w, y + h, x, y + h, s1, t1, s2, t1, s2, t2, s1, t2) {
     }
 };
 
@@ -80,9 +82,6 @@ class DrawStringCmd : public DrawImageQuadCmd {
   public:
     DrawStringCmd(float X, float Y, int Align, int Size, int Font, const char *Text);
     ~DrawStringCmd() {
-        if (tex != NULL) {
-            delete tex;
-        }
     }
 
     void execute() {

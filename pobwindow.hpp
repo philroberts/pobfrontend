@@ -1,3 +1,4 @@
+#include <QCache>
 #include <QDir>
 #include <QOpenGLWindow>
 #include <QPainter>
@@ -18,7 +19,7 @@ class POBWindow : public QOpenGLWindow {
     Q_OBJECT
 public:
 //    POBWindow(QWindow *parent = 0) : QOpenGLWindow(parent) {};
-    POBWindow() {
+    POBWindow() : stringCache(5) {
 //        QSurfaceFormat theformat(format());
 //        format.setProfile(QSurfaceFormat::CompatibilityProfile);
 /*        format.setDepthBufferSize(24);
@@ -80,5 +81,6 @@ public:
     float drawColor[4];
     QMap<QPair<int, int>, QList<std::shared_ptr<Cmd>>> layers;
     QList<std::shared_ptr<SubScript>> subScriptList;
-    QOpenGLTexture *white;
+    std::shared_ptr<QOpenGLTexture> white;
+    QCache<QString, std::shared_ptr<QOpenGLTexture>> stringCache;
 };

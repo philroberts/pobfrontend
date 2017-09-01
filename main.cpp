@@ -14,13 +14,16 @@
 
 lua_State *L;
 
+int dscount;
+
+POBWindow *pobwindow;
 
 QRegularExpression colourCodes("(\\^x.{6})|(\\^\\d)");
 
 void POBWindow::initializeGL() {
     QImage wimg(1, 1, QImage::Format_Mono);
     wimg.fill(1);
-    white = new QOpenGLTexture(wimg);
+    white.reset(new QOpenGLTexture(wimg));
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glEnable(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -42,6 +45,7 @@ void POBWindow::resizeGL(int w, int h) {
 
 void POBWindow::paintGL() {
     isDrawing = true;
+    dscount = 0;
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     layers.clear();
     curLayer = 0;
@@ -70,6 +74,11 @@ void POBWindow::paintGL() {
     if (result != 0) {
         lua_error(L);
     }
+
+    if (dscount > pobwindow->stringCache.maxCost()) {
+        pobwindow->stringCache.setMaxCost(dscount);
+    }
+
     for (auto layer : layers) {
         for (auto cmd : layer) {
             cmd->execute();
@@ -318,8 +327,6 @@ void POBWindow::DrawColor(uint32_t col) {
 }
 
 
-POBWindow *pobwindow;
-
 // Color escape table
 static const float colorEscape[10][4] = {
     {0.0f, 0.0f, 0.0f, 1.0f},
@@ -422,7 +429,7 @@ static int l_SetMainObject(lua_State* L)
 // =============
 
 struct imgHandle_s {
-    QOpenGLTexture* hnd;
+    std::shared_ptr<QOpenGLTexture> *hnd;
     QImage* img;
 };
 
@@ -468,7 +475,7 @@ static int l_imgHandleLoad(lua_State* L)
     } else {
         fullFileName = pobwindow->scriptWorkDir + QDir::separator() + fileName;
     }
-    delete imgHandle->hnd;
+    imgHandle->hnd = new std::shared_ptr<QOpenGLTexture>();
     delete imgHandle->img;
     int flags = TF_NOMIPMAP;
     for (int f = 2; f <= n; f++) {
@@ -645,19 +652,18 @@ static int l_DrawImage(lua_State* L)
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 5, "Usage: DrawImage({imgHandle|nil}, left, top, width, height[, tcLeft, tcTop, tcRight, tcBottom])");
     pobwindow->LAssert(L, lua_isnil(L, 1) || pobwindow->IsUserData(L, 1, "uiimghandlemeta"), "DrawImage() argument 1: expected image handle or nil, got %t", 1);
-    QOpenGLTexture* hnd = NULL;
+    std::shared_ptr<QOpenGLTexture> hnd;
     if ( !lua_isnil(L, 1) ) {
         imgHandle_s* imgHandle = (imgHandle_s*)lua_touserdata(L, 1);
-        if (imgHandle->hnd == NULL) {
-            imgHandle->hnd = new QOpenGLTexture(*(imgHandle->img));
-            if (!imgHandle->hnd->isCreated()) {
+        if (imgHandle->hnd->get() == NULL) {
+            imgHandle->hnd->reset(new QOpenGLTexture(*(imgHandle->img)));
+            if (!(*imgHandle->hnd)->isCreated()) {
                 //std::cout << "BROKEN TEXTURE " << imgHandle->img->text("fname").toStdString() << std::endl;
-                delete imgHandle->hnd;
-                imgHandle->hnd = pobwindow->white;
+                *imgHandle->hnd = pobwindow->white;
             }
         }
         pobwindow->LAssert(L, imgHandle->hnd != NULL, "DrawImage(): image handle has no image loaded");
-        hnd = imgHandle->hnd;
+        hnd = *imgHandle->hnd;
     }
     float arg[8];
     if (n > 5) {
@@ -697,19 +703,18 @@ static int l_DrawImageQuad(lua_State* L)
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 9, "Usage: DrawImageQuad({imgHandle|nil}, x1, y1, x2, y2, x3, y3, x4, y4[, s1, t1, s2, t2, s3, t3, s4, t4])");
     pobwindow->LAssert(L, lua_isnil(L, 1) || pobwindow->IsUserData(L, 1, "uiimghandlemeta"), "DrawImageQuad() argument 1: expected image handle or nil, got %t", 1);
-    QOpenGLTexture* hnd = NULL;
+    std::shared_ptr<QOpenGLTexture> hnd;
     if ( !lua_isnil(L, 1) ) {
         imgHandle_s* imgHandle = (imgHandle_s*)lua_touserdata(L, 1);
-        if (imgHandle->hnd == NULL) {
-            imgHandle->hnd = new QOpenGLTexture(*(imgHandle->img));
-            if (!imgHandle->hnd->isCreated()) {
+        if ((*imgHandle->hnd).get() == NULL) {
+            (*imgHandle->hnd).reset(new QOpenGLTexture(*(imgHandle->img)));
+            if (!(*imgHandle->hnd)->isCreated()) {
                 // std::cout << "BROKEN TEXTURE" << imgHandle->img->text("fname").toStdString() << std::endl;
-                delete imgHandle->hnd;
-                imgHandle->hnd = pobwindow->white;
+                *imgHandle->hnd = pobwindow->white;
             }
         }
         pobwindow->LAssert(L, imgHandle->hnd != NULL, "DrawImageQuad(): image handle has no image loaded");
-        hnd = imgHandle->hnd;
+        hnd = *imgHandle->hnd;
     }
     float arg[16];
     if (n > 9) {
@@ -730,6 +735,7 @@ static int l_DrawImageQuad(lua_State* L)
 }
 
 DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, const char *Text) : text(Text) {
+    dscount++;
     if (text[0] == '^') {
         switch(text[1].toLatin1()) {
         case '0':
@@ -782,23 +788,50 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
     }
     text.remove(colourCodes);
 
-    QString fontName;
-    switch (Font) {
-    case 1:
-        fontName = "Liberation Sans";
-        break;
-    case 2:
-        fontName = "Liberation Sans Bold";
-        break;
-    case 0:
-    default:
-        fontName = "Bitstream Vera Mono";
-        break;
+    QString cacheKey = (QString::number(Font) + "_" + QString::number(Size) + "_" + text);
+    if (pobwindow->stringCache.contains(cacheKey)) {
+        tex = *pobwindow->stringCache[cacheKey];
+    } else {
+        QString fontName;
+        switch (Font) {
+        case 1:
+            fontName = "Liberation Sans";
+            break;
+        case 2:
+            fontName = "Liberation Sans Bold";
+            break;
+        case 0:
+        default:
+            fontName = "Bitstream Vera Mono";
+            break;
+        }
+        QFont font(fontName);
+        font.setPixelSize(Size + pobwindow->fontFudge);
+        QFontMetrics fm(font);
+        QSize size = fm.size(0, text);
+        int width = size.width();
+
+        QImage brush(size, QImage::Format_ARGB32);
+        brush.fill(QColor(255, 255, 255, 0));
+        tex = NULL;
+        if (brush.width() && brush.height()) {
+            QPainter p(&brush);
+            p.setPen(QColor(255, 255, 255, 255));
+            p.setFont(font);
+            p.setCompositionMode(QPainter::CompositionMode_Plus);
+            p.drawText(0, 0, size.width(), size.height(), 0, text);
+            p.end();
+            tex.reset(new QOpenGLTexture(brush));
+        }
+        pobwindow->stringCache.insert(cacheKey, new std::shared_ptr<QOpenGLTexture>(tex));
     }
-    QFont font(fontName);
-    font.setPixelSize(Size + pobwindow->fontFudge);
-    QFontMetrics fm(font);
-    double width = fm.width(text);
+    int width = 0;
+    int height = 0;
+    if (tex.get() != NULL) {
+        width = tex->width();
+        height = tex->height();
+    }
+
     switch (Align) {
     case F_CENTRE:
         X = floor((pobwindow->width - width) / 2.0f + X);
@@ -813,27 +846,14 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
         X = floor(X - width) + 5;
         break;
     }
-
-    QImage brush(fm.size(0, text), QImage::Format_ARGB32);
-    brush.fill(QColor(255, 255, 255, 0));
-    tex = NULL;
-    if (brush.width() && brush.height()) {
-        QPainter p(&brush);
-        p.setPen(QColor(255, 255, 255, 255));
-        p.setFont(font);
-        p.setCompositionMode(QPainter::CompositionMode_Plus);
-        p.drawText(0, 0, fm.size(0, text).width(), fm.size(0, text).height(), 0, text);
-        p.end();
-        tex = new QOpenGLTexture(brush);
-    }
     x[0] = X;
     y[0] = Y;
-    x[1] = X + brush.width();
+    x[1] = X + width;
     y[1] = Y;
-    x[2] = X + brush.width();
-    y[2] = Y + brush.height();
+    x[2] = X + width;
+    y[2] = Y + height;
     x[3] = X;
-    y[3] = Y + brush.height();
+    y[3] = Y + height;
 
     s[0] = 0;
     t[0] = 0;

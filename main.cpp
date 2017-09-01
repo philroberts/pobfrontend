@@ -14,6 +14,9 @@
 
 lua_State *L;
 
+
+QRegularExpression colourCodes("(\\^x.{6})|(\\^\\d)");
+
 void POBWindow::initializeGL() {
     QImage wimg(1, 1, QImage::Format_Mono);
     wimg.fill(1);
@@ -771,13 +774,13 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
         col[3] = 0;
     }
     int count = 0;
-    for (QRegularExpressionMatchIterator i = QRegularExpression("(\\^x.{6})|(\\^\\d)").globalMatch(text);i.hasNext();i.next()) {
+    for (auto i = colourCodes.globalMatch(text);i.hasNext();i.next()) {
         count += 1;
     }
     if (count > 1) {
         //std::cout << text.toStdString().c_str() << " " << count << std::endl;
     }
-    text.remove(QRegularExpression("(\\^x.{6})|(\\^\\d)"));
+    text.remove(colourCodes);
 
     QString fontName;
     switch (Font) {
@@ -880,8 +883,7 @@ static int l_DrawStringWidth(lua_State* L)
     }
     QString text(lua_tostring(L, 3));
 
-    text.remove(QRegExp("\\^x.{6}"));
-    text.remove(QRegExp("\\^."));
+    text.remove(colourCodes);
 
     QFont font(fontName);
     font.setPixelSize(fontsize + pobwindow->fontFudge);
@@ -911,8 +913,7 @@ static int l_DrawStringCursorIndex(lua_State* L)
     }
     QString text(lua_tostring(L, 3));
 
-    text.remove(QRegExp("\\^x.{6}"));
-    text.remove(QRegExp("\\^."));
+    text.remove(colourCodes);
 
     QStringList texts = text.split("\n");
     QFont font(fontName);

@@ -894,16 +894,25 @@ static int l_DrawStringWidth(lua_State* L)
     pobwindow->LAssert(L, lua_isstring(L, 3), "DrawStringWidth() argument 3: expected string, got %t", 3);
     int fontsize = lua_tointeger(L, 1);
     QString fontName = lua_tostring(L, 2);
+    QString fontKey = "0";
     if (fontName == "VAR") {
         fontName = "Liberation Sans";
+        fontKey = "1";
     } else if (fontName == "VAR BOLD") {
         fontName = "Liberation Sans Bold";
+        fontKey = "2";
     } else {
         fontName = "Bitstream Vera Mono";
     }
     QString text(lua_tostring(L, 3));
 
     text.remove(colourCodes);
+
+    QString cacheKey = (fontKey + "_" + QString::number(fontsize) + "_" + text);
+    if (pobwindow->stringCache.contains(cacheKey) && pobwindow->stringCache[cacheKey]->get()) {
+        lua_pushinteger(L, (*pobwindow->stringCache[cacheKey])->width());
+        return 1;
+    }
 
     QFont font(fontName);
     font.setPixelSize(fontsize + pobwindow->fontFudge);

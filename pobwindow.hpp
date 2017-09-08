@@ -36,7 +36,6 @@ public:
         userPath = QDir::currentPath();
 
         fontFudge = 0;
-        fontName = "Inconsolata";
     }
 
 //    POBWindow() : QOpenGLWindow() {

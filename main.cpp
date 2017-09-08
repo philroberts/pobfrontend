@@ -1595,9 +1595,6 @@ int main(int argc, char **argv)
             pobwindow->fontFudge = ff;
         }
     }
-    if (args.size() > 2) {
-        pobwindow->fontName = args[2];
-    }
 
     L = luaL_newstate();
     luaL_openlibs(L);

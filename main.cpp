@@ -18,7 +18,7 @@ int dscount;
 
 POBWindow *pobwindow;
 
-QRegularExpression colourCodes("(\\^x.{6})|(\\^\\d)");
+QRegularExpression colourCodes{"(\\^x.{6})|(\\^\\d)"};
 
 void pushCallback(const char* name) {
     lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
@@ -29,7 +29,7 @@ void pushCallback(const char* name) {
 }
 
 void POBWindow::initializeGL() {
-    QImage wimg(1, 1, QImage::Format_Mono);
+    QImage wimg{1, 1, QImage::Format_Mono};
     wimg.fill(1);
     white.reset(new QOpenGLTexture(wimg));
     glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -277,16 +277,16 @@ void POBWindow::SetDrawLayer(int layer, int subLayer) {
 
     curLayer = layer;
     curSubLayer = subLayer;
-    QPair<int, int> key = qMakePair(layer, subLayer);
+    QPair<int, int> key{layer, subLayer};
     if (layers.contains(key)) {
         return;
     }
-    layers[key] = QList<std::shared_ptr<Cmd>>();
+    layers[key] = QList<std::shared_ptr<Cmd>>{};
 }
 
 
 void POBWindow::AppendCmd(std::shared_ptr<Cmd> cmd) {
-    layers[qMakePair(curLayer, curSubLayer)].append(cmd);
+    layers[{curLayer, curSubLayer}].append(cmd);
 }
 
 void POBWindow::DrawColor(const float col[4]) {
@@ -301,7 +301,7 @@ void POBWindow::DrawColor(const float col[4]) {
         drawColor[2] = 1.0f;
         drawColor[3] = 1.0f;
     }
-    AppendCmd(std::shared_ptr<Cmd>(new ColorCmd(drawColor)));
+    AppendCmd(std::shared_ptr<Cmd>{new ColorCmd(drawColor)});
 }
 
 void POBWindow::DrawColor(uint32_t col) {
@@ -421,8 +421,8 @@ struct imgHandle_s {
 static int l_NewImageHandle(lua_State* L)
 {
     imgHandle_s* imgHandle = (imgHandle_s*)lua_newuserdata(L, sizeof(imgHandle_s));
-    imgHandle->hnd = NULL;
-    imgHandle->img = NULL;
+    imgHandle->hnd = nullptr;
+    imgHandle->img = nullptr;
     lua_pushvalue(L, lua_upvalueindex(1));
     lua_setmetatable(L, -2);
     return 1;
@@ -490,16 +490,16 @@ static int l_imgHandleUnload(lua_State* L)
 {
     imgHandle_s* imgHandle = GetImgHandle(L, "Unload", false);
     delete imgHandle->hnd;
-    imgHandle->hnd = NULL;
+    imgHandle->hnd = nullptr;
     delete imgHandle->img;
-    imgHandle->img = NULL;
+    imgHandle->img = nullptr;
     return 0;
 }
 
 static int l_imgHandleIsValid(lua_State* L)
 {
     imgHandle_s* imgHandle = GetImgHandle(L, "IsValid", false);
-    lua_pushboolean(L, imgHandle->hnd != NULL);
+    lua_pushboolean(L, imgHandle->hnd != nullptr);
     return 1;
 }
 
@@ -640,14 +640,14 @@ static int l_DrawImage(lua_State* L)
     std::shared_ptr<QOpenGLTexture> hnd;
     if ( !lua_isnil(L, 1) ) {
         imgHandle_s* imgHandle = (imgHandle_s*)lua_touserdata(L, 1);
-        if (imgHandle->hnd->get() == NULL) {
+        if (imgHandle->hnd->get() == nullptr) {
             imgHandle->hnd->reset(new QOpenGLTexture(*(imgHandle->img)));
             if (!(*imgHandle->hnd)->isCreated()) {
                 //std::cout << "BROKEN TEXTURE " << imgHandle->img->text("fname").toStdString() << std::endl;
                 *imgHandle->hnd = pobwindow->white;
             }
         }
-        pobwindow->LAssert(L, imgHandle->hnd != NULL, "DrawImage(): image handle has no image loaded");
+        pobwindow->LAssert(L, imgHandle->hnd != nullptr, "DrawImage(): image handle has no image loaded");
         hnd = *imgHandle->hnd;
     }
     float arg[8];
@@ -669,7 +669,7 @@ static int l_DrawImage(lua_State* L)
 }
 
 void DrawImageQuadCmd::execute() {
-    if (tex != NULL && tex->isCreated()) {
+    if (tex != nullptr && tex->isCreated()) {
         tex->bind();
     } else {
         pobwindow->white->bind();
@@ -691,14 +691,14 @@ static int l_DrawImageQuad(lua_State* L)
     std::shared_ptr<QOpenGLTexture> hnd;
     if ( !lua_isnil(L, 1) ) {
         imgHandle_s* imgHandle = (imgHandle_s*)lua_touserdata(L, 1);
-        if ((*imgHandle->hnd).get() == NULL) {
+        if ((*imgHandle->hnd).get() == nullptr) {
             (*imgHandle->hnd).reset(new QOpenGLTexture(*(imgHandle->img)));
             if (!(*imgHandle->hnd)->isCreated()) {
                 // std::cout << "BROKEN TEXTURE" << imgHandle->img->text("fname").toStdString() << std::endl;
                 *imgHandle->hnd = pobwindow->white;
             }
         }
-        pobwindow->LAssert(L, imgHandle->hnd != NULL, "DrawImageQuad(): image handle has no image loaded");
+        pobwindow->LAssert(L, imgHandle->hnd != nullptr, "DrawImageQuad(): image handle has no image loaded");
         hnd = *imgHandle->hnd;
     }
     float arg[16];
@@ -798,7 +798,7 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
 
         QImage brush(size, QImage::Format_ARGB32);
         brush.fill(QColor(255, 255, 255, 0));
-        tex = NULL;
+        tex = nullptr;
         if (brush.width() && brush.height()) {
             QPainter p(&brush);
             p.setPen(QColor(255, 255, 255, 255));
@@ -812,7 +812,7 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
     }
     int width = 0;
     int height = 0;
-    if (tex.get() != NULL) {
+    if (tex.get() != nullptr) {
         width = tex->width();
         height = tex->height();
     }
@@ -1564,7 +1564,7 @@ static int l_Restart(lua_State* L)
 static int l_Exit(lua_State* L)
 {
     int n = lua_gettop(L);
-    const char* msg = NULL;
+    const char* msg = nullptr;
     if (n >= 1 && !lua_isnil(L, 1)) {
         pobwindow->LAssert(L, lua_isstring(L, 1), "Exit() argument 1: expected string or nil, got %t", 1);
         msg = lua_tostring(L, 1);
@@ -1582,7 +1582,7 @@ static int l_Exit(lua_State* L)
 
 int main(int argc, char **argv)
 {
-    QGuiApplication app(argc, argv);
+    QGuiApplication app{argc, argv};
 
     QStringList args = app.arguments();
 

@@ -18,7 +18,7 @@ int dscount;
 
 POBWindow *pobwindow;
 
-QRegularExpression colourCodes{"(\\^x.{6})|(\\^\\d)"};
+QRegularExpression colourCodes{R"((\^x.{6})|(\^\d))"};
 
 void pushCallback(const char* name) {
     lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
@@ -420,7 +420,7 @@ struct imgHandle_s {
 
 static int l_NewImageHandle(lua_State* L)
 {
-    imgHandle_s* imgHandle = (imgHandle_s*)lua_newuserdata(L, sizeof(imgHandle_s));
+    auto imgHandle = (imgHandle_s*)lua_newuserdata(L, sizeof(imgHandle_s));
     imgHandle->hnd = nullptr;
     imgHandle->img = nullptr;
     lua_pushvalue(L, lua_upvalueindex(1));
@@ -431,7 +431,7 @@ static int l_NewImageHandle(lua_State* L)
 static imgHandle_s* GetImgHandle(lua_State* L, const char* method, bool loaded)
 {
     pobwindow->LAssert(L, pobwindow->IsUserData(L, 1, "uiimghandlemeta"), "imgHandle:%s() must be used on an image handle", method);
-    imgHandle_s* imgHandle = (imgHandle_s*)lua_touserdata(L, 1);
+    auto imgHandle = (imgHandle_s*)lua_touserdata(L, 1);
     lua_remove(L, 1);
     if (loaded) {
         //pobwindow->LAssert(L, imgHandle->hnd != NULL, "imgHandle:%s(): image handle has no image loaded", method);
@@ -641,7 +641,7 @@ static int l_DrawImage(lua_State* L)
     pobwindow->LAssert(L, lua_isnil(L, 1) || pobwindow->IsUserData(L, 1, "uiimghandlemeta"), "DrawImage() argument 1: expected image handle or nil, got %t", 1);
     std::shared_ptr<QOpenGLTexture> hnd;
     if ( !lua_isnil(L, 1) ) {
-        imgHandle_s* imgHandle = (imgHandle_s*)lua_touserdata(L, 1);
+        auto imgHandle = (imgHandle_s*)lua_touserdata(L, 1);
         if (imgHandle->hnd->get() == nullptr) {
             imgHandle->hnd->reset(new QOpenGLTexture(*(imgHandle->img)));
             if (!(*imgHandle->hnd)->isCreated()) {
@@ -692,7 +692,7 @@ static int l_DrawImageQuad(lua_State* L)
     pobwindow->LAssert(L, lua_isnil(L, 1) || pobwindow->IsUserData(L, 1, "uiimghandlemeta"), "DrawImageQuad() argument 1: expected image handle or nil, got %t", 1);
     std::shared_ptr<QOpenGLTexture> hnd;
     if ( !lua_isnil(L, 1) ) {
-        imgHandle_s* imgHandle = (imgHandle_s*)lua_touserdata(L, 1);
+        auto imgHandle = (imgHandle_s*)lua_touserdata(L, 1);
         if ((*imgHandle->hnd).get() == nullptr) {
             (*imgHandle->hnd).reset(new QOpenGLTexture(*(imgHandle->img)));
             if (!(*imgHandle->hnd)->isCreated()) {
@@ -863,8 +863,8 @@ static int l_DrawString(lua_State* L)
     pobwindow->LAssert(L, lua_isnumber(L, 4), "DrawString() argument 4: expected number, got %t", 4);
     pobwindow->LAssert(L, lua_isstring(L, 5), "DrawString() argument 5: expected string, got %t", 5);
     pobwindow->LAssert(L, lua_isstring(L, 6), "DrawString() argument 6: expected string, got %t", 6);
-    static const char* alignMap[6] = { "LEFT", "CENTER", "RIGHT", "CENTER_X", "RIGHT_X", NULL };
-    static const char* fontMap[4] = { "FIXED", "VAR", "VAR BOLD", NULL };
+    static const char* alignMap[6] = { "LEFT", "CENTER", "RIGHT", "CENTER_X", "RIGHT_X", nullptr };
+    static const char* fontMap[4] = { "FIXED", "VAR", "VAR BOLD", nullptr };
     pobwindow->AppendCmd(std::shared_ptr<Cmd>(new DrawStringCmd(
         (float)lua_tonumber(L, 1), (float)lua_tonumber(L, 2), luaL_checkoption(L, 3, "LEFT", alignMap), 
         (int)lua_tointeger(L, 4), luaL_checkoption(L, 5, "FIXED", fontMap), lua_tostring(L, 6)
@@ -970,7 +970,7 @@ static int l_StripEscapes(lua_State* L)
     }
     *p = 0;
     lua_pushstring(L, strip);
-    delete strip;
+    delete[] strip;
     return 1;
 }
 
@@ -1006,7 +1006,7 @@ static int l_NewFileSearch(lua_State* L)
         return 0;
     }
 
-    searchHandle_s *handle = (searchHandle_s*)lua_newuserdata(L, sizeof(searchHandle_s));
+    auto handle = (searchHandle_s*)lua_newuserdata(L, sizeof(searchHandle_s));
     handle->fil = new QFileInfoList(fil);
     lua_pushvalue(L, lua_upvalueindex(1));
     lua_setmetatable(L, -2);
@@ -1016,7 +1016,7 @@ static int l_NewFileSearch(lua_State* L)
 static QFileInfoList* GetSearchHandle(lua_State* L, const char* method, bool valid)
 {
     pobwindow->LAssert(L, pobwindow->IsUserData(L, 1, "uisearchhandlemeta"), "searchHandle:%s() must be used on a search handle", method);
-    searchHandle_s *searchHandle = (searchHandle_s*)lua_touserdata(L, 1);
+    auto searchHandle = (searchHandle_s*)lua_touserdata(L, 1);
     lua_remove(L, 1);
     if (valid) {
         pobwindow->LAssert(L, !searchHandle->fil->isEmpty(), "searchHandle:%s(): search handle is no longer valid (ran out of files to find)", method);
@@ -1312,7 +1312,7 @@ static int l_LaunchSubScript(lua_State* L)
                            "LaunchSubScript() argument %d: only nil, boolean, number and string types can be passed to sub script", i);
     }
     int slot = pobwindow->subScriptList.size();
-    pobwindow->subScriptList.append(std::shared_ptr<SubScript>(new SubScript(L)));
+    pobwindow->subScriptList.append(std::make_shared<SubScript>(L));
     pobwindow->subScriptList[slot]->start();
     lua_pushinteger(L, slot);
     return 1;

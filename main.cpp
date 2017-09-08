@@ -460,6 +460,8 @@ static int l_imgHandleLoad(lua_State* L)
     } else {
         fullFileName = pobwindow->scriptWorkDir + QDir::separator() + fileName;
     }
+
+    delete imgHandle->hnd;
     imgHandle->hnd = new std::shared_ptr<QOpenGLTexture>();
     delete imgHandle->img;
     int flags = TF_NOMIPMAP;

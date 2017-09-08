@@ -796,7 +796,6 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
         font.setPixelSize(Size + pobwindow->fontFudge);
         QFontMetrics fm(font);
         QSize size = fm.size(0, text);
-        int width = size.width();
 
         QImage brush(size, QImage::Format_ARGB32);
         brush.fill(QColor(255, 255, 255, 0));

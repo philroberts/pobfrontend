@@ -63,6 +63,7 @@ public:
     void onSubFinished(lua_State *L_main, int id) {
         lua_getfield(L_main, LUA_REGISTRYINDEX, "uicallbacks");
         lua_getfield(L_main, -1, "MainObject");
+        lua_remove(L_main, -2);
         lua_getfield(L_main, -1, "OnSubFinished");
         lua_insert(L_main, -2);
         lua_pushinteger(L_main, id);

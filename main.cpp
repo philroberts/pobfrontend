@@ -20,6 +20,14 @@ POBWindow *pobwindow;
 
 QRegularExpression colourCodes("(\\^x.{6})|(\\^\\d)");
 
+void pushCallback(const char* name) {
+    lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
+    lua_getfield(L, -1, "MainObject");
+    lua_remove(L, -2);
+    lua_getfield(L, -1, name);
+    lua_insert(L, -2);
+}
+
 void POBWindow::initializeGL() {
     QImage wimg(1, 1, QImage::Format_Mono);
     wimg.fill(1);
@@ -66,10 +74,7 @@ void POBWindow::paintGL() {
         subScriptList.clear();
     }
 
-    lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
-    lua_getfield(L, -1, "MainObject");
-    lua_getfield(L, -1, "OnFrame");
-    lua_insert(L, -2);
+    pushCallback("OnFrame");
     int result = lua_pcall(L, 1, 0, 0);
     if (result != 0) {
         lua_error(L);
@@ -108,10 +113,7 @@ void pushMouseString(QMouseEvent *event) {
 }
 
 void POBWindow::mousePressEvent(QMouseEvent *event) {
-    lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
-    lua_getfield(L, -1, "MainObject");
-    lua_getfield(L, -1, "OnKeyDown");
-    lua_insert(L, -2);
+    pushCallback("OnKeyDown");
     pushMouseString(event);
     lua_pushboolean(L, false);
     int result = lua_pcall(L, 3, 0, 0);
@@ -121,10 +123,7 @@ void POBWindow::mousePressEvent(QMouseEvent *event) {
 }
 
 void POBWindow::mouseReleaseEvent(QMouseEvent *event) {
-    lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
-    lua_getfield(L, -1, "MainObject");
-    lua_getfield(L, -1, "OnKeyUp");
-    lua_insert(L, -2);
+    pushCallback("OnKeyUp");
     pushMouseString(event);
     int result = lua_pcall(L, 2, 0, 0);
     if (result != 0) {
@@ -133,10 +132,7 @@ void POBWindow::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void POBWindow::mouseDoubleClickEvent(QMouseEvent *event) {
-    lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
-    lua_getfield(L, -1, "MainObject");
-    lua_getfield(L, -1, "OnKeyDown");
-    lua_insert(L, -2);
+    pushCallback("OnKeyDown");
     pushMouseString(event);
     lua_pushboolean(L, true);
     int result = lua_pcall(L, 3, 0, 0);
@@ -146,10 +142,7 @@ void POBWindow::mouseDoubleClickEvent(QMouseEvent *event) {
 }
 
 void POBWindow::wheelEvent(QWheelEvent *event) {
-    lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
-    lua_getfield(L, -1, "MainObject");
-    lua_getfield(L, -1, "OnKeyUp");
-    lua_insert(L, -2);
+    pushCallback("OnKeyUp");
     if (event->angleDelta().y() > 0) {
         lua_pushstring(L, "WHEELUP");
     } else if (event->angleDelta().y() < 0) {
@@ -213,9 +206,7 @@ bool pushKeyString(int keycode) {
 }
 
 void POBWindow::keyPressEvent(QKeyEvent *event) {
-    lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
-    lua_getfield(L, -1, "MainObject");
-    lua_getfield(L, -1, "OnKeyDown");
+    pushCallback("OnKeyDown");
     if (!pushKeyString(event->key())) {
         if (event->key() >= ' ' && event->key() <= '~') {
             char s[2];
@@ -226,18 +217,15 @@ void POBWindow::keyPressEvent(QKeyEvent *event) {
             }
             s[1] = 0;
             if (!(QGuiApplication::keyboardModifiers() & Qt::ControlModifier)) {
-                lua_pop(L, 1);
-                lua_getfield(L, -1, "OnChar");
+                lua_pop(L, 2);
+                pushCallback("OnChar");
             }
             lua_pushstring(L, s);
-
         } else {
             lua_pushstring(L, "ASDF");
             //std::cout << "UNHANDLED KEYDOWN" << std::endl;
         }
     }
-    lua_insert(L, -2);
-    lua_insert(L, -3);
     lua_pushboolean(L, false);
     int result = lua_pcall(L, 3, 0, 0);
     if (result != 0) {
@@ -246,10 +234,7 @@ void POBWindow::keyPressEvent(QKeyEvent *event) {
 }
 
 void POBWindow::keyReleaseEvent(QKeyEvent *event) {
-    lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
-    lua_getfield(L, -1, "MainObject");
-    lua_getfield(L, -1, "OnKeyUp");
-    lua_insert(L, -2);
+    pushCallback("OnKeyUp");
     if (!pushKeyString(event->key())) {
         lua_pushstring(L, "ASDF");
         //std::cout << "UNHANDLED KEYUP" << std::endl;
@@ -1729,10 +1714,7 @@ int main(int argc, char **argv)
         lua_error(L);
     }
 
-    lua_getfield(L, LUA_REGISTRYINDEX, "uicallbacks");
-    lua_getfield(L, -1, "MainObject");
-    lua_getfield(L, -1, "OnInit");
-    lua_insert(L, -2);
+    pushCallback("OnInit");
     result = lua_pcall(L, 1, 0, 0);
     if (result != 0) {
         lua_error(L);

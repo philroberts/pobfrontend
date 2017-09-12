@@ -1400,15 +1400,15 @@ static int l_PCall(lua_State* L)
     int n = lua_gettop(L);
     pobwindow->LAssert(L, n >= 1, "Usage: PCall(func[, ...])");
     pobwindow->LAssert(L, lua_isfunction(L, 1), "PCall() argument 1: expected function, got %t", 1);
-//    lua_getfield(L, LUA_REGISTRYINDEX, "traceback");
-//    lua_insert(L, 1); // Insert traceback function at start of stack
-    int err = lua_pcall(L, n - 1, LUA_MULTRET, 0);
+    lua_getfield(L, LUA_REGISTRYINDEX, "traceback");
+    lua_insert(L, 1); // Insert traceback function at start of stack
+    int err = lua_pcall(L, n - 1, LUA_MULTRET, 1);
     if (err) {
         lua_error(L);
         return 1;
     }
-//    lua_pushnil(L);
-//    lua_replace(L, 1); // Replace traceback function with nil
+    lua_pushnil(L);
+    lua_replace(L, 1); // Replace traceback function with nil
     return lua_gettop(L);
 }
 

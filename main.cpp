@@ -537,6 +537,11 @@ static int l_imgHandleImageSize(lua_State* L)
 // Rendering
 // =========
 
+static int l_RenderInit(lua_State* L)
+{
+    return 0;
+}
+
 static int l_GetScreenSize(lua_State* L)
 {
     lua_pushinteger(L, pobwindow->width);
@@ -1634,6 +1639,7 @@ int main(int argc, char **argv)
     lua_setfield(L, LUA_REGISTRYINDEX, "uiimghandlemeta");
 
     // Rendering
+    ADDFUNC(RenderInit);
     ADDFUNC(GetScreenSize);
     ADDFUNC(SetClearColor);
     ADDFUNC(SetDrawLayer);

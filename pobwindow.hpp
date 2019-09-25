@@ -46,7 +46,8 @@ public:
     void initializeGL();
     void resizeGL(int w, int h);
     void paintGL();
-    
+
+    void subScriptFinished();
     void mouseMoveEvent(QMouseEvent *event);
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);

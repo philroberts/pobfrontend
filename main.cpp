@@ -60,20 +60,6 @@ void POBWindow::paintGL() {
     curSubLayer = 0;
     glColor4f(0, 0, 0, 0);
 
-    bool clean = true;
-    for (int i = 0;i < subScriptList.size();i++) {
-        if (subScriptList[i].get()) {
-            clean = false;
-            if (subScriptList[i]->isFinished()) {
-                subScriptList[i]->onSubFinished(L, i);
-                subScriptList[i].reset();
-            }
-        }
-    }
-    if (clean) {
-        subScriptList.clear();
-    }
-
     pushCallback("OnFrame");
     int result = lua_pcall(L, 1, 0, 0);
     if (result != 0) {
@@ -89,11 +75,29 @@ void POBWindow::paintGL() {
             cmd->execute();
         }
     }
-    update();
     isDrawing = false;
 }
 
+void POBWindow::subScriptFinished() {
+    bool clean = true;
+    for (int i = 0;i < subScriptList.size();i++) {
+        if (subScriptList[i].get()) {
+            clean = false;
+            if (subScriptList[i]->isFinished()) {
+                subScriptList[i]->onSubFinished(L, i);
+                subScriptList[i].reset();
+            }
+        }
+    }
+    if (clean) {
+        subScriptList.clear();
+    }
+
+    update();
+}
+
 void POBWindow::mouseMoveEvent(QMouseEvent *event) {
+    update();
 }
 
 void pushMouseString(QMouseEvent *event) {
@@ -120,6 +124,7 @@ void POBWindow::mousePressEvent(QMouseEvent *event) {
     if (result != 0) {
         lua_error(L);
     }
+    update();
 }
 
 void POBWindow::mouseReleaseEvent(QMouseEvent *event) {
@@ -129,6 +134,7 @@ void POBWindow::mouseReleaseEvent(QMouseEvent *event) {
     if (result != 0) {
         lua_error(L);
     }
+    update();
 }
 
 void POBWindow::mouseDoubleClickEvent(QMouseEvent *event) {
@@ -139,6 +145,7 @@ void POBWindow::mouseDoubleClickEvent(QMouseEvent *event) {
     if (result != 0) {
         lua_error(L);
     }
+    update();
 }
 
 void POBWindow::wheelEvent(QWheelEvent *event) {
@@ -155,6 +162,7 @@ void POBWindow::wheelEvent(QWheelEvent *event) {
     if (result != 0) {
         lua_error(L);
     }
+    update();
 }
 
 bool pushKeyString(int keycode) {
@@ -231,6 +239,7 @@ void POBWindow::keyPressEvent(QKeyEvent *event) {
     if (result != 0) {
         lua_error(L);
     }
+    update();
 }
 
 void POBWindow::keyReleaseEvent(QKeyEvent *event) {
@@ -243,6 +252,7 @@ void POBWindow::keyReleaseEvent(QKeyEvent *event) {
     if (result != 0) {
         lua_error(L);
     }
+    update();
 }
 
 void POBWindow::LAssert(lua_State* L, int cond, const char* fmt, ...) {
@@ -1317,6 +1327,8 @@ static int l_LaunchSubScript(lua_State* L)
     }
     int slot = pobwindow->subScriptList.size();
     pobwindow->subScriptList.append(std::make_shared<SubScript>(L));
+    // Signal us when the subscript completes so we can trigger a repaint.
+    pobwindow->connect( pobwindow->subScriptList[slot].get(), &SubScript::finished, pobwindow, &POBWindow::subScriptFinished );
     pobwindow->subScriptList[slot]->start();
     lua_pushinteger(L, slot);
     return 1;

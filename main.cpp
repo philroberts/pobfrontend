@@ -53,15 +53,23 @@ void POBWindow::resizeGL(int w, int h) {
 
 void POBWindow::paintGL() {
     isDrawing = true;
-    dscount = 0;
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-    layers.clear();
-    curLayer = 0;
-    curSubLayer = 0;
     glColor4f(0, 0, 0, 0);
 
     pushCallback("OnFrame");
     int result = lua_pcall(L, 1, 0, 0);
+    if (result != 0) {
+        lua_error(L);
+    }
+
+    // Hack: PoB doesn't recalculate stats until the frame _after_ some changes (e.g. config). Just call OnFrame twice.
+    layers.clear();
+    dscount = 0;
+    curLayer = 0;
+    curSubLayer = 0;
+
+    pushCallback("OnFrame");
+    result = lua_pcall(L, 1, 0, 0);
     if (result != 0) {
         lua_error(L);
     }

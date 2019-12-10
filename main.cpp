@@ -4,7 +4,7 @@
 #include <QFontDatabase>
 #include <QKeyEvent>
 #include <QtWidgets/QApplication>
-#include <QtWidgets/QDesktopWidget>
+#include <QDesktopWidget>
 #include <QtGui/QGuiApplication>
 #include <QRect>
 

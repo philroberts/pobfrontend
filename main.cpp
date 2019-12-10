@@ -606,7 +606,7 @@ static int l_SetDrawLayer(lua_State* L)
 }
 
 void ViewportCmd::execute() {
-    glViewport(x, pobwindow->height - y - h, w * 2 , h * 2);
+    glViewport(x, pobwindow->height - y - h, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, (float)w, (float)h, 0, -9999, 9999);
@@ -1608,6 +1608,21 @@ static int l_Exit(lua_State* L)
 
 int main(int argc, char **argv)
 {
+#ifdef __APPLE__
+    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QApplication* temp = new QApplication(argc, argv);
+    QRect screenGeometry = QApplication::desktop()->screenGeometry();
+    double width = screenGeometry.width();
+    // assumes that the default desktop resolution is 720p (scale of 1)
+    int minWidth = 1280;
+    delete temp;
+
+    double scale = width / minWidth;
+    std::string scaleAsString = std::to_string(scale);
+    QByteArray scaleAsQByteArray(scaleAsString.c_str(), scaleAsString.length());
+    qputenv("QT_SCALE_FACTOR", scaleAsQByteArray);
+#endif //__APPLE__
+    
     QGuiApplication app{argc, argv};
 
     QStringList args = app.arguments();

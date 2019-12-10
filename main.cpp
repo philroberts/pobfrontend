@@ -10,7 +10,6 @@
 
 
 #include <iostream>
-
 #include <zlib.h>
 #include "main.h"
 #include "pobwindow.hpp"

@@ -1,5 +1,12 @@
-all: frontend pob
-	mv build/pobfrontend PathOfBuilding
+DIR := ${CURDIR}
+
+all: frontend pob 
+	pushd build; \
+	ninja install; \
+	popd; \
+	macdeployqt ${DIR}/PathOfBuilding.app; \
+	cp ${DIR}/Info.plist.sh ${DIR}/PathOfBuilding.app/Contents/Info.plist; \
+	echo 'Finished'
 
 pob: load_pob luacurl frontend
 	pushd PathOfBuilding; \
@@ -11,13 +18,13 @@ pob: load_pob luacurl frontend
 	popd
 
 frontend: 
-	meson -Dbuildtype=release build; \
-	pushd build; \
-	ninja; \
-	popd
+	meson -Dbuildtype=release --prefix=${DIR}/PathOfBuilding.app --bindir=Contents/MacOS build
 
 load_pob:
-	git clone --depth 1 https://github.com/Openarl/PathOfBuilding.git
+	git clone --depth 1 https://github.com/Openarl/PathOfBuilding.git; \
+	pushd PathOfBuilding; \
+	rm -rf .git; \
+	popd
 
 luacurl:
 	git clone --depth 1 https://github.com/Lua-cURL/Lua-cURLv3.git; \
@@ -42,4 +49,4 @@ meson:
 	brew install meson
 
 clean:
-	rm -rf PathOfBuilding Lua-cURLv3 lcurl.so build
+	rm -rf PathOfBuilding PathOfBuilding.app Lua-cURLv3 lcurl.so build

@@ -16,6 +16,12 @@ zlib_dep = dependency('zlib')
 qt5 = import('qt5')
 prep = qt5.preprocess(moc_headers : ['subscript.hpp', 'pobwindow.hpp'])
 
-executable('pobfrontend',
+executable('PathOfBuilding',
   sources : ['main.cpp', prep],
-  dependencies : [qt5_dep, gl_dep, zlib_dep, lua_dep])
+  dependencies : [qt5_dep, gl_dep, zlib_dep, lua_dep],
+  install : true)
+
+install_data('myapp.icns', install_dir : 'Contents/Resources')
+install_data('Info.plist', install_dir : 'Contents')
+install_data('myapp.sh', install_dir : 'Contents/MacOS')
+meson.add_install_script('myscript.sh')

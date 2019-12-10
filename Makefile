@@ -10,17 +10,14 @@ pob: load_pob luacurl frontend
 	cp ../lcurl.so .; \
 	popd
 
-frontend: load_frontend
-	meson -Dbuildtype=release pobfrontend build; \
+frontend: 
+	meson -Dbuildtype=release build; \
 	pushd build; \
 	ninja; \
 	popd
 
 load_pob:
 	git clone --depth 1 https://github.com/Openarl/PathOfBuilding.git
-
-load_frontend:
-	git clone --depth 1 https://github.com/aspel/pobfrontend.git
 
 luacurl:
 	git clone --depth 1 https://github.com/Lua-cURL/Lua-cURLv3.git; \

@@ -1,0 +1,22 @@
+os:
+  - osx
+addons:
+  homebrew:
+    packages:
+      - make
+
+script:
+  - make clean
+  - make tools
+  - make
+  - tar -cf - -C ${TRAVIS_BUILD_DIR}/PathOfBuilding/ $(ls -A ${TRAVIS_BUILD_DIR}"/PathOfBuilding/") | xz -c > PathOfBuilding.darwin.tar.xz
+
+
+deploy:
+  provider: releases
+  api_key: $GITHUB_TOKEN
+  file:
+    - "${TRAVIS_BUILD_DIR}/PathOfBuilding.darwin.tar.xz"
+  skip_cleanup: true
+  on:
+    tags: true

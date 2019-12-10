@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QFontDatabase>
 #include <QKeyEvent>
+#include <QtWidgets/QApplication>
 #include <QtGui/QGuiApplication>
 
 #include <iostream>

@@ -42,4 +42,4 @@ meson:
 	brew install meson
 
 clean:
-	rm -rf PathOfBuilding pobfrontend Lua-cURLv3 lcurl.so build
+	rm -rf PathOfBuilding Lua-cURLv3 lcurl.so build

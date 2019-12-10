@@ -3,10 +3,10 @@
 #include <QDateTime>
 #include <QFontDatabase>
 #include <QKeyEvent>
-#include <QtWidgets/QApplication>
+#include <QApplication>
 #include <QDesktopWidget>
 #include <QtGui/QGuiApplication>
-#include <QRect>
+#include <QPaintDevice>
 
 
 #include <iostream>
@@ -1615,13 +1615,10 @@ int main(int argc, char **argv)
 #ifdef __APPLE__
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QApplication* temp = new QApplication(argc, argv);
-    QRect screenGeometry = QApplication::desktop()->screenGeometry();
-    double width = screenGeometry.width();
-    // assumes that the default desktop resolution is 720p (scale of 1)
-    int minWidth = 1280;
+    // ratio can be | 1 or 2 |
+    int ratio = QApplication::desktop()->devicePixelRatio(); 
     delete temp;
-
-    double scale = width / minWidth;
+    double scale = 1.0 / ratio;
     std::string scaleAsString = std::to_string(scale);
     QByteArray scaleAsQByteArray(scaleAsString.c_str(), scaleAsString.length());
     qputenv("QT_SCALE_FACTOR", scaleAsQByteArray);

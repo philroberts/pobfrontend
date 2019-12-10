@@ -606,7 +606,7 @@ static int l_SetDrawLayer(lua_State* L)
 }
 
 void ViewportCmd::execute() {
-    glViewport(x, pobwindow->height - y - h, w, h);
+    glViewport(x, pobwindow->height - y - h, w * 2 , h * 2);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, (float)w, (float)h, 0, -9999, 9999);

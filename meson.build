@@ -1,6 +1,6 @@
 project('POB Frontend', 'cpp', default_options : ['cpp_std=c++11'])
 
-qt5_dep = dependency('qt5', modules : ['Gui','Core'])
+qt5_dep = dependency('qt5', modules : ['Gui','Core','Widgets'])
 lua_dep = dependency('luajit')
 # NB on OSX you also need to invoke meson like so, because luajit:
 # LDFLAGS="-pagezero_size 10000 -image_base 100000000" meson pobfrontend build

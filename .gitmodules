@@ -1,0 +1,3 @@
+[submodule "Lua-cURLv3"]
+	path = Lua-cURLv3
+	url = https://github.com/Lua-cURL/Lua-cURLv3

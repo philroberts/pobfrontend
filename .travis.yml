@@ -20,7 +20,7 @@ script:
   - make clean
   - make tools
   - make
-  - tar -cf - -C ${TRAVIS_BUILD_DIR}/PathOfBuilding/ $(ls -A ${TRAVIS_BUILD_DIR}"/PathOfBuilding/") | xz -c > PathOfBuilding.darwin.tar.xz
+  - tar -cf - -C ${TRAVIS_BUILD_DIR}/PathOfBuilding.app/ $(ls -A ${TRAVIS_BUILD_DIR}"/PathOfBuilding.app/") | xz -c > PathOfBuilding.darwin.tar.xz
 
 
 deploy:

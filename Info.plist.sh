@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleExecutable</key>
-	<string>myapp.sh</string>
+	<string>pobWrapper.sh</string>
 	<key>CFBundleGetInfoString</key>
 	<string>Created by Qt/QMake</string>
 	<key>CFBundleIconFile</key>
-	<string>myapp.icns</string>
+	<string>pobLogo.icns</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.yourcompany.PathOfBuilding</string>
 	<key>CFBundleName</key>

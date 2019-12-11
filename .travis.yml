@@ -21,6 +21,12 @@ script:
   - make
   - tar -cf - PathOfBuilding.app | xz -c > PathOfBuilding.darwin.tar.xz
 
+before_deploy:
+  # Set up git user name and tag this commit
+  - git config --local user.name "aspel"
+  - git config --local user.email "aspellip@gmail.com"
+  - export TRAVIS_TAG="nightly-$(date +'%Y/%m/%d')-$(git log --format=%h -1)"
+  - git tag $TRAVIS_TAG
 
 deploy:
   provider: releases

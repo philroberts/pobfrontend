@@ -1623,6 +1623,7 @@ static int l_Exit(lua_State* L)
 int main(int argc, char **argv)
 {
 #ifdef __APPLE__
+#define GL_SILENCE_DEPRECATION
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QApplication* temp = new QApplication(argc, argv);
     // ratio can be | 1 or 2 |

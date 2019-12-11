@@ -29,7 +29,7 @@ before_deploy:
   - git remote add gh https://${TRAVIS_REPO_SLUG%/*}:${GITHUB_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git
   - git push -f gh PathOfBuilding
   - git remote remove gh
-  - export TRAVIS_TAG="nightly-$(date +'%Y/%m/%d')-$(git log --format=%h -1)"
+  - export TR_TAG="nightly-$(date +'%Y/%m/%d')-$(git log --format=%h -1)"
 
 deploy:
   provider: releases
@@ -38,7 +38,6 @@ deploy:
     - "${TRAVIS_BUILD_DIR}/PathOfBuilding.darwin.tar.xz"
   skip_cleanup: true
   name: "PathOfBuilding macOS build"
-  body: "Automatically PathOfBuilding dev build by Travis CI $TRAVIS_TAG"
-  prerelease: true
+  body: "Automatically PathOfBuilding dev build by Travis CI $TR_TAG"
   overwrite: true
   target_commitish: $TRAVIS_COMMIT

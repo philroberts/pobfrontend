@@ -25,6 +25,10 @@ before_deploy:
   # Set up git user name and tag this commit
   - git config --local user.name "aspel"
   - git config --local user.email "aspellip@gmail.com"
+  - git tag -f PathOfBuilding
+  - git remote add gh https://${TRAVIS_REPO_SLUG%/*}:$GITHUB_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git
+  - git push -f gh PathOfBuilding
+  - git remote remove gh
   - export TRAVIS_TAG="nightly-$(date +'%Y/%m/%d')-$(git log --format=%h -1)"
   - git tag $TRAVIS_TAG
 
@@ -34,3 +38,8 @@ deploy:
   file:
     - "${TRAVIS_BUILD_DIR}/PathOfBuilding.darwin.tar.xz"
   skip_cleanup: true
+  name: "PathOfBuilding macOS build"
+  body: "Automatically PathOfBuilding dev build by Travis CI $TRAVIS_TAG"
+  prerelease: true
+  overwrite: true
+  target_commitish: $TRAVIS_COMMIT

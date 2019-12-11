@@ -4,7 +4,7 @@ all: frontend pob
 	pushd build; \
 	ninja install; \
 	popd; \
-	macdeployqt ${DIR}/PathOfBuilding.app -verbose=3; \
+	macdeployqt ${DIR}/PathOfBuilding.app; \
 	cp ${DIR}/Info.plist.sh ${DIR}/PathOfBuilding.app/Contents/Info.plist; \
 	echo 'Finished'
 

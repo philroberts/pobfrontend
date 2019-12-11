@@ -10,10 +10,16 @@
 
 
 #include <iostream>
+#include <string>
 #include <zlib.h>
 #include "main.h"
 #include "pobwindow.hpp"
 #include "subscript.hpp"
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+
+const char *homedir;
 
 lua_State *L;
 
@@ -1268,7 +1274,12 @@ static int l_GetTime(lua_State* L)
 
 static int l_GetScriptPath(lua_State* L)
 {
-    lua_pushstring(L, pobwindow->scriptPath.toStdString().c_str());
+    if ((homedir = getenv("HOME")) == NULL) {
+        homedir = getpwuid(getuid())->pw_dir;
+    }   
+    
+
+    lua_pushstring(L, homedir);
     return 1;
 }
 

@@ -61,7 +61,7 @@ deploy:
   provider: releases
   api_key: $GITHUB_TOKEN
   file:
-    - "${TRAVIS_BUILD_DIR}/{$ARCHIVE_NAME}"
+    - "${TRAVIS_BUILD_DIR}/${ARCHIVE_NAME}"
   skip_cleanup: true
   name: "PathOfBuilding"
   body: | 

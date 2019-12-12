@@ -29,7 +29,7 @@ load_pob:
 luacurl:
 	git clone --depth 1 https://github.com/Lua-cURL/Lua-cURLv3.git; \
 	pushd Lua-cURLv3; \
-	sed -i '' 's/\?= lua/\?= luajit/' Makefile; \
+	sed -i -e's/\?= lua/\?= luajit/' Makefile; \
 	make; \
 	mv lcurl.so ../lcurl.so; \
 	popd

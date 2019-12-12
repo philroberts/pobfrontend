@@ -3,7 +3,7 @@ SHELL = /bin/bash
 
 all: frontend pob 
 	pushd build; \
-	ninja install; \
+	ninja; \
 	popd; \
 	mv build/pobfrontend PathOfBuilding; \
 	echo 'Finished'

@@ -36,18 +36,18 @@ luacurl:
 tools: qt lua zlib meson
 
 qt:
-	apt -y install qt5-default; \
-    apt -y install qtcreator
+	sudo apt -y install qt5-default; \
+    sudo apt -y install qtcreator
 
 lua:
-	apt -y install luajit
+	sudo apt -y install luajit
 
 zlib:
-	apt -y install zlib1g; \
-    apt -y install zlib1g-dev
+	sudo apt -y install zlib1g; \
+    sudo apt -y install zlib1g-dev
 
 meson:
-	apt -y install meson
+	sudo apt -y install meson
 
 clean:
 	rm -rf PathOfBuilding Lua-cURLv3 lcurl.so build

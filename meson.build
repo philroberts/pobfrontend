@@ -21,7 +21,10 @@ executable('PathOfBuilding',
   dependencies : [qt5_dep, gl_dep, zlib_dep, lua_dep],
   install : true)
 
-install_data('pobLogo.icns', install_dir : 'Contents/Resources')
-install_data('Info.plist', install_dir : 'Contents')
-install_data('pobWrapper.sh', install_dir : 'Contents/MacOS')
-meson.add_install_script('mesonInstaller.sh')
+
+if build_machine.system() == 'darwin'
+    install_data('pobLogo.icns', install_dir : 'Contents/Resources')
+    install_data('Info.plist', install_dir : 'Contents')
+    install_data('pobWrapper.sh', install_dir : 'Contents/MacOS')
+    meson.add_install_script('mesonInstaller.sh')
+endif

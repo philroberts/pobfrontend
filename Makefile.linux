@@ -1,0 +1,53 @@
+DIR := ${CURDIR}
+
+all: frontend pob 
+	pushd build; \
+	ninja install; \
+	popd; \
+    mv build/pobfrontend PathOfBuilding; \
+	echo 'Finished'
+
+pob: load_pob luacurl frontend
+	pushd PathOfBuilding; \
+	unzip 'tree*.zip'; \
+	unzip runtime-win32.zip lua/xml.lua lua/base64.lua lua/sha1.lua; \
+	mv lua/*.lua .; \
+	rmdir lua; \
+	cp ../lcurl.so .; \
+	popd
+
+frontend: 
+	meson -Dbuildtype=release build
+
+load_pob:
+	git clone --depth 1 https://github.com/Openarl/PathOfBuilding.git; \
+	pushd PathOfBuilding; \
+	rm -rf .git; \
+	popd
+
+luacurl:
+	git clone --depth 1 https://github.com/Lua-cURL/Lua-cURLv3.git; \
+	pushd Lua-cURLv3; \
+	sed -i '' 's/\?= lua/\?= luajit/' Makefile; \
+	make; \
+	mv lcurl.so ../lcurl.so; \
+	popd
+
+tools: qt lua zlib meson
+
+qt:
+	apt install qt5-default; \
+    apt install qtcreator
+
+lua:
+	apt install luajit
+
+zlib:
+	apt install zlib1g; \
+    apt install zlib1g-dev
+
+meson:
+	apt install meson
+
+clean:
+	rm -rf PathOfBuilding Lua-cURLv3 lcurl.so build

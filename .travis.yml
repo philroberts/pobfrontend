@@ -1,46 +1,68 @@
-os:
-  - osx
+language: cpp
 
-env:
-  global:
-    - PATH=/usr/local/opt/qt/bin:$PATH
-    - LDFLAGS=-L/usr/local/opt/qt/lib
-    - CPPFLAGS=-I/usr/local/opt/qt/include
-    - PKG_CONFIG_PATH=/usr/local/opt/qt/lib/pkgconfig
-    
 branches:
   except:
     - PathOfBuilding
-    
-addons:
-  homebrew:
-    packages:
-      - make
-      - ninja
+ 
+jobs:
+  include:
+  - stage: build OSX
+    os: osx
+    env:
+      - PATH=/usr/local/opt/qt/bin:$PATH
+      - LDFLAGS=-L/usr/local/opt/qt/lib
+      - CPPFLAGS=-I/usr/local/opt/qt/include
+      - PKG_CONFIG_PATH=/usr/local/opt/qt/lib/pkgconfig
+    addons:
+      homebrew:
+        packages:
+          - make
+          - ninja
+    script:
+      - make -f Makefile.darwin clean
+      - make -f Makefile.darwin tools
+      - make -f Makefile.darwin
+      - tar -cf - PathOfBuilding.app | xz -c > PathOfBuilding.darwin.tar.xz
 
-script:
-  - make clean
-  - make tools
-  - make
-  - tar -cf - PathOfBuilding.app | xz -c > PathOfBuilding.darwin.tar.xz
+  - stage: build Linux        
+    os: linux
+    dist: bionic
+    addons:
+      apt:
+        packages:
+          - build-essential
+          - ninja-build
+    script:
+      - make -f Makefile.linux clean
+      - make -f Makefile.linux tools
+      - make -f Makefile.linux
+      - tar -cf - PathOfBuilding | xz -c > PathOfBuilding.linux.tar.xz
+      - tar -cf - -C ${TRAVIS_BUILD_DIR}/PathOfBuilding/ $(ls -A ${TRAVIS_BUILD_DIR}"/PathOfBuilding/") | xz -c > PathOfBuilding.linux.tar.xz
 
 before_deploy:
-  # Set up git user name and tag this commit
-  - git config --local user.name "aspel"
-  - git config --local user.email "aspellip@gmail.com"
-  - git tag -f PathOfBuilding
-  - git remote add gh https://${TRAVIS_REPO_SLUG%/*}:${GITHUB_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git
-  - git push -f gh PathOfBuilding
-  - git remote remove gh
-  - export TR_TAG="nightly-$(date +'%Y/%m/%d')-$(git log --format=%h -1)"
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      git config --local user.name "aspel"
+      git config --local user.email "aspellip@gmail.com"
+      git tag -f PathOfBuilding
+      git remote add gh https://${TRAVIS_REPO_SLUG%/*}:${GITHUB_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git
+      git push -f gh PathOfBuilding
+      git remote remove gh
+      export TR_TAG="nightly-$(date +'%Y/%m/%d')-$(git log --format=%h -1)"
+      export ARCHIVE_NAME="PathOfBuilding.darwin.tar.xz"
+    fi
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      export ARCHIVE_NAME="PathOfBuilding.linux.tar.xz"
+    fi
+
 
 deploy:
   provider: releases
   api_key: $GITHUB_TOKEN
   file:
-    - "${TRAVIS_BUILD_DIR}/PathOfBuilding.darwin.tar.xz"
+    - "${TRAVIS_BUILD_DIR}/{$ARCHIVE_NAME}"
   skip_cleanup: true
-  name: "PathOfBuilding macOS build"
-  body: "Automatically PathOfBuilding dev build by Travis CI $TR_TAG"
+  name: "PathOfBuilding"
+  body: "Automatically PathOfBuilding dev build by Travis CI"
   overwrite: true
   target_commitish: $TRAVIS_COMMIT

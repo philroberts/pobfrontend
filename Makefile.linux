@@ -1,4 +1,5 @@
 DIR := ${CURDIR}
+SHELL = /bin/bash
 
 all: frontend pob 
 	pushd build; \

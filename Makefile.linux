@@ -4,7 +4,7 @@ all: frontend pob
 	pushd build; \
 	ninja install; \
 	popd; \
-    mv build/pobfrontend PathOfBuilding; \
+	mv build/pobfrontend PathOfBuilding; \
 	echo 'Finished'
 
 pob: load_pob luacurl frontend
@@ -37,14 +37,15 @@ tools: qt lua zlib meson
 
 qt:
 	sudo apt -y install qt5-default; \
-    sudo apt -y install qtcreator
+	sudo apt -y install qtcreator
 
 lua:
-	sudo apt -y install luajit
+	sudo apt -y install luajit; \
+	sudo apt -y install libluajit-5.1-dev
 
 zlib:
 	sudo apt -y install zlib1g; \
-    sudo apt -y install zlib1g-dev
+	sudo apt -y install zlib1g-dev
 
 meson:
 	sudo apt -y install meson

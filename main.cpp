@@ -1624,15 +1624,8 @@ int main(int argc, char **argv)
 {
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
-    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    QApplication* temp = new QApplication(argc, argv);
-    // ratio can be | 1 or 2 |
-    int ratio = QApplication::desktop()->devicePixelRatio(); 
-    delete temp;
-    double scale = 1.0 / ratio;
-    std::string scaleAsString = std::to_string(scale);
-    QByteArray scaleAsQByteArray(scaleAsString.c_str(), scaleAsString.length());
-    qputenv("QT_SCALE_FACTOR", scaleAsQByteArray);
+    QGuiApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+    qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", "0");
 #endif //__APPLE__
     
     QGuiApplication app{argc, argv};

@@ -25,8 +25,8 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
-	<true/>
+	<false/>
 	<key>NSSupportsAutomaticGraphicsSwitching</key>
-	<true/>
+	<false/>
 </dict>
 </plist>

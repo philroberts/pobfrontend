@@ -5,7 +5,7 @@ all: frontend pob
 	pushd build; \
 	ninja; \
 	popd; \
-	mv build/pobfrontend PathOfBuilding; \
+	mv build/PathOfBuilding PathOfBuilding/; \
 	echo 'Finished'
 
 pob: load_pob luacurl frontend

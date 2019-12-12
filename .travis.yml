@@ -6,6 +6,7 @@ jobs:
   include:
   - stage: build OSX
     os: osx
+    language: objective-c
     env:
       - PATH=/usr/local/opt/qt/bin:$PATH
       - LDFLAGS=-L/usr/local/opt/qt/lib
@@ -25,6 +26,7 @@ jobs:
   - stage: build Linux        
     os: linux
     dist: bionic
+    language: cpp
     addons:
       apt:
         packages:

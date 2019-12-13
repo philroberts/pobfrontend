@@ -27,7 +27,6 @@ jobs:
     os: linux
     dist: bionic
     language: cpp
-    sudo: required
     addons:
       apt:
         packages:
@@ -61,13 +60,9 @@ deploy:
   api_key: $GITHUB_TOKEN
   file:
     - "${TRAVIS_BUILD_DIR}/${ARCHIVE_NAME}"
-  skip_cleanup: true
   name: "PathOfBuilding"
-  release_notes: | 
-    Automatically PathOfBuilding dev 
-    build by Travis CI ${TR_TAG}
   overwrite: true
   target_commitish: $TRAVIS_COMMIT
 
 after_deploy:
-  - "curl -X PATCH -H 'Accept: application/vnd.github.v3+json' -H \"Authorization: token ${GITHUB_TOKEN}\" https://api.github.com/repos/aspel/pobfrontend/releases/22137604 -d \"{ 'tag_name':'PathOfBuilding','target_commitish': 'master','name': 'PathOfBuilding','body': \"build by Travis CI ${TR_TAG}\", 'draft': false, 'prerelease': false }\""
+  - "curl -X PATCH -H 'Accept: application/vnd.github.v3+json' -H \"Authorization: token ${GITHUB_TOKEN}\" https://api.github.com/repos/aspel/pobfrontend/releases/22137604 -d \"{ 'tag_name':'PathOfBuilding','target_commitish': 'master','name': 'PathOfBuilding','body': \\\"build by Travis CI ${TR_TAG}\\\", 'draft': false, 'prerelease': false }\""

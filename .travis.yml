@@ -62,13 +62,14 @@ deploy:
     - "${TRAVIS_BUILD_DIR}/${ARCHIVE_NAME}"
   name: "PathOfBuilding"
   overwrite: true
+  skip_cleanup: true
   target_commitish: $TRAVIS_COMMIT
 
 after_deploy:
+  - set -e
   - |
     curl -X PATCH -H 'Accept: application/vnd.github.v3+json' \
-    -H "Authorization: token ${GITHUB_TOKEN}" \
-    https://api.github.com/repos/aspel/pobfrontend/releases/22137604 \
+    -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/repos/aspel/pobfrontend/releases/22137604 \
     --data @<(cat <<EOF
     { "tag_name":"PathOfBuilding",
     "target_commitish": "master",

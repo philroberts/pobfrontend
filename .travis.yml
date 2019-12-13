@@ -41,6 +41,8 @@ jobs:
       - tar -cf - -C ${TRAVIS_BUILD_DIR}/PathOfBuilding/ $(ls -A ${TRAVIS_BUILD_DIR}"/PathOfBuilding/") | xz -c > PathOfBuilding.linux.tar.xz
 
 before_deploy:
+  - export TR_TAG="nightly-$(date +'%Y/%m/%d')"
+  - curl -X PATCH -H 'Accept: application/vnd.github.v3+json' -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/repos/aspel/pobfrontend/releases/22137604 -d "{ \"tag_name\":\"PathOfBuilding\",\"target_commitish\": \"master\",   \"name\": \"PathOfBuilding\", \"body\": \"build by Travis CI ${TR_TAG}\",\"draft\": false, \"prerelease\": false }"
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       git config --local user.name "aspel"
@@ -49,14 +51,11 @@ before_deploy:
       git remote add gh https://${TRAVIS_REPO_SLUG%/*}:${GITHUB_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git
       git push -f gh PathOfBuilding
       git remote remove gh
-      export TR_TAG="nightly-$(date +'%Y/%m/%d')-$(git log --format=%h -1)"
       export ARCHIVE_NAME="PathOfBuilding.darwin.tar.xz"
     fi
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       export ARCHIVE_NAME="PathOfBuilding.linux.tar.xz"
     fi
-  - curl -X PATCH -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/repos/aspel/pobfrontend/releases/22137604 -d "{ \"tag_name\":\"PathOfBuilding\",\"target_commitish\": \"master\",   \"name\": \"PathOfBuilding\",   \"body\": \"build by Travis CI ${TR_TAG}\",   \"draft\": false,   \"prerelease\": false }"
-
 
 deploy:
   provider: releases

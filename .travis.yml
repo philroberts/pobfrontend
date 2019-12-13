@@ -76,4 +76,4 @@ after_deploy:
     "body": "build by Travis CI ${TR_TAG}",
     "draft": false, "prerelease": false }
     EOF
-)
+    )

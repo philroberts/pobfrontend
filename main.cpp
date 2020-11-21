@@ -746,7 +746,7 @@ static int l_DrawImageQuad(lua_State* L)
 
 DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, const char *Text) : text(Text) {
     dscount++;
-    if (text[0] == '^') {
+    if (text.size() >= 2 && text[0] == '^') {
         switch(text[1].toLatin1()) {
         case '0':
             setCol(0.0f, 0.0f, 0.0f);

@@ -1,6 +1,5 @@
 #include <QClipboard>
 #include <QColor>
-#include <QDateTime>
 #include <QFontDatabase>
 #include <QKeyEvent>
 #include <QtGui/QGuiApplication>
@@ -1258,7 +1257,7 @@ static int l_Inflate(lua_State* L)
 
 static int l_GetTime(lua_State* L)
 {
-    qint64 ms = QDateTime::currentDateTime().toMSecsSinceEpoch();
+    qint64 ms = QDateTime::currentDateTime().toMSecsSinceEpoch() - pobwindow->baseTime;
     lua_pushinteger(L, ms);
     return 1;
 }

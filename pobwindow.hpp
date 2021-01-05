@@ -1,4 +1,5 @@
 #include <QCache>
+#include <QDateTime>
 #include <QDir>
 #include <QOpenGLWindow>
 #include <QPainter>
@@ -30,6 +31,7 @@ public:
 //        theformat.setAlphaBufferSize(8);
 //        std::cout << theformat.hasAlpha() << std::endl;
 //        setFormat(theformat);
+        baseTime = QDateTime::currentDateTime().toMSecsSinceEpoch();
         scriptPath = QDir::currentPath();
         scriptWorkDir = QDir::currentPath();
         basePath = QDir::currentPath();
@@ -67,6 +69,7 @@ public:
     void AppendCmd(std::shared_ptr<Cmd> cmd);
     void DrawColor(const float col[4] = NULL);
     void DrawColor(uint32_t col);
+    qint64 baseTime;
     QString scriptPath;
     QString scriptWorkDir;
     QString basePath;

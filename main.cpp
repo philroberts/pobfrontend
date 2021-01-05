@@ -1259,7 +1259,7 @@ static int l_Inflate(lua_State* L)
 static int l_GetTime(lua_State* L)
 {
     qint64 ms = QDateTime::currentDateTime().toMSecsSinceEpoch();
-    lua_pushinteger(L, ms / 1000);
+    lua_pushinteger(L, ms);
     return 1;
 }
 

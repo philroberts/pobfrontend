@@ -1192,10 +1192,12 @@ static int l_Deflate(lua_State* L)
     deflateEnd(&z);
     if (err == Z_STREAM_END) {
         lua_pushlstring(L, (const char*)out, z.total_out);
+        delete[] out;
         return 1;
     } else {
         lua_pushnil(L);
         lua_pushstring(L, zError(err));
+        delete[] out;
         return 2;
     }
 }
@@ -1227,7 +1229,7 @@ static int l_Inflate(lua_State* L)
                 out = newOut;
             } else {
                 // PANIC
-                delete out;
+                delete[] out;
                 return 0;
             }
             z.next_out = out + outSz;
@@ -1238,10 +1240,12 @@ static int l_Inflate(lua_State* L)
     inflateEnd(&z);
     if (err == Z_STREAM_END) {
         lua_pushlstring(L, (const char*)out, z.total_out);
+        delete[] out;
         return 1;
     } else {
         lua_pushnil(L);
         lua_pushstring(L, zError(err));
+        delete[] out;
         return 2;
     }
 }

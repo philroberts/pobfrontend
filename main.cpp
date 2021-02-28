@@ -1612,6 +1612,7 @@ int main(int argc, char **argv)
         int ff = args[1].toInt(&ok);
         if (ok) {
             pobwindow->fontFudge = ff;
+            args.removeAt(1); // Remove our hacky font factor from the arglist passed on to the script
         }
     }
 
@@ -1725,6 +1726,14 @@ int main(int argc, char **argv)
     lua_pushcfunction(L, l_Exit);
     lua_setfield(L, -2, "exit");
     lua_pop(L, 1);		// Pop 'os' table
+
+    // Set up args table
+    lua_createtable(L, args.size() - 1, 1);
+    for (int i = 0; i < args.size(); i++) {
+        lua_pushstring(L, args[i].toStdString().c_str());
+        lua_rawseti(L, -2, i);
+    }
+    lua_setglobal(L, "arg");
 
     int result = luaL_dofile(L, "Launch.lua");
     if (result != 0) {

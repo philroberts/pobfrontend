@@ -207,6 +207,9 @@ bool pushKeyString(int keycode) {
     case Qt::Key_PageDown:
         lua_pushstring(L, "PAGEDOWN");
         break;
+    case Qt::Key_F6:
+        lua_pushstring(L, "F6");
+        break;
     default:
         return false;
     }

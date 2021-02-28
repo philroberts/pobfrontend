@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QOpenGLWindow>
 #include <QPainter>
+#include <QTimer>
 #include <memory>
 
 #include "main.h"
@@ -38,6 +39,9 @@ public:
         userPath = QDir::currentPath();
 
         fontFudge = 0;
+
+        connect(&updateTimer, &QTimer::timeout, this, QOverload<>::of(&POBWindow::triggerUpdate));
+        updateTimer.start(100);
     }
 
 //    POBWindow() : QOpenGLWindow() {
@@ -86,4 +90,6 @@ public:
     QList<std::shared_ptr<SubScript>> subScriptList;
     std::shared_ptr<QOpenGLTexture> white;
     QCache<QString, std::shared_ptr<QOpenGLTexture>> stringCache;
+    QTimer updateTimer;
+    void triggerUpdate();
 };

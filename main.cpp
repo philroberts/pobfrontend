@@ -27,6 +27,12 @@ void pushCallback(const char* name) {
     lua_insert(L, -2);
 }
 
+void POBWindow::triggerUpdate() {
+    if (isActive()) {
+        update();
+    }
+}
+
 void POBWindow::initializeGL() {
     QImage wimg{1, 1, QImage::Format_Mono};
     wimg.fill(1);
@@ -55,20 +61,13 @@ void POBWindow::paintGL() {
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     glColor4f(0, 0, 0, 0);
 
-    pushCallback("OnFrame");
-    int result = lua_pcall(L, 1, 0, 0);
-    if (result != 0) {
-        lua_error(L);
-    }
-
-    // Hack: PoB doesn't recalculate stats until the frame _after_ some changes (e.g. config). Just call OnFrame twice.
     layers.clear();
     dscount = 0;
     curLayer = 0;
     curSubLayer = 0;
 
     pushCallback("OnFrame");
-    result = lua_pcall(L, 1, 0, 0);
+    int result = lua_pcall(L, 1, 0, 0);
     if (result != 0) {
         lua_error(L);
     }
@@ -99,8 +98,6 @@ void POBWindow::subScriptFinished() {
     if (clean) {
         subScriptList.clear();
     }
-
-    update();
 }
 
 void POBWindow::mouseMoveEvent(QMouseEvent *event) {
@@ -131,7 +128,6 @@ void POBWindow::mousePressEvent(QMouseEvent *event) {
     if (result != 0) {
         lua_error(L);
     }
-    update();
 }
 
 void POBWindow::mouseReleaseEvent(QMouseEvent *event) {
@@ -141,7 +137,6 @@ void POBWindow::mouseReleaseEvent(QMouseEvent *event) {
     if (result != 0) {
         lua_error(L);
     }
-    update();
 }
 
 void POBWindow::mouseDoubleClickEvent(QMouseEvent *event) {
@@ -152,7 +147,6 @@ void POBWindow::mouseDoubleClickEvent(QMouseEvent *event) {
     if (result != 0) {
         lua_error(L);
     }
-    update();
 }
 
 void POBWindow::wheelEvent(QWheelEvent *event) {
@@ -169,7 +163,6 @@ void POBWindow::wheelEvent(QWheelEvent *event) {
     if (result != 0) {
         lua_error(L);
     }
-    update();
 }
 
 bool pushKeyString(int keycode) {
@@ -246,7 +239,6 @@ void POBWindow::keyPressEvent(QKeyEvent *event) {
     if (result != 0) {
         lua_error(L);
     }
-    update();
 }
 
 void POBWindow::keyReleaseEvent(QKeyEvent *event) {
@@ -259,7 +251,6 @@ void POBWindow::keyReleaseEvent(QKeyEvent *event) {
     if (result != 0) {
         lua_error(L);
     }
-    update();
 }
 
 void POBWindow::LAssert(lua_State* L, int cond, const char* fmt, ...) {

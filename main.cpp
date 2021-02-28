@@ -112,7 +112,7 @@ void pushMouseString(QMouseEvent *event) {
     case Qt::RightButton:
         lua_pushstring(L, "RIGHTBUTTON");
         break;
-    case Qt::MidButton:
+    case Qt::MiddleButton:
         lua_pushstring(L, "MIDDLEBUTTON");
         break;
     default:

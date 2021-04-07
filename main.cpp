@@ -802,7 +802,7 @@ DrawStringCmd::DrawStringCmd(float X, float Y, int Align, int Size, int Font, co
             break;
         case 0:
         default:
-            fontName = "Bitstream Vera Mono";
+            fontName = "Bitstream Vera Sans Mono";
             break;
         }
         QFont font(fontName);
@@ -901,7 +901,7 @@ static int l_DrawStringWidth(lua_State* L)
         fontName = "Liberation Sans Bold";
         fontKey = "2";
     } else {
-        fontName = "Bitstream Vera Mono";
+        fontName = "Bitstream Vera Sans Mono";
     }
     QString text(lua_tostring(L, 3));
 
@@ -937,7 +937,7 @@ static int l_DrawStringCursorIndex(lua_State* L)
     } else if (fontName == "VAR BOLD") {
         fontName = "Liberation Sans Bold";
     } else {
-        fontName = "Bitstream Vera Mono";
+        fontName = "Bitstream Vera Sans Mono";
     }
     QString text(lua_tostring(L, 3));
 

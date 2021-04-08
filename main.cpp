@@ -52,6 +52,9 @@ void POBWindow::initializeGL() {
 }
 
 void POBWindow::resizeGL(int w, int h) {
+    float ratio = pobwindow->devicePixelRatio();
+    scaleWidth = w * ratio;
+    scaleHeight = h * ratio;
     width = w;
     height = h;
 }
@@ -596,7 +599,12 @@ static int l_SetDrawLayer(lua_State* L)
 }
 
 void ViewportCmd::execute() {
-    glViewport(x, pobwindow->height - y - h, w, h);
+    float ratio = pobwindow->devicePixelRatio();
+    int new_x = x * ratio;
+    int new_y = (pobwindow->height - h - y) * ratio;
+    int new_w = w * ratio;
+    int new_h = h * ratio;
+    glViewport(new_x, new_y, new_w, new_h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, (float)w, (float)h, 0, -9999, 9999);
@@ -607,15 +615,25 @@ void ViewportCmd::execute() {
 static int l_SetViewport(lua_State* L)
 {
     int n = lua_gettop(L);
+    int x = 0;
+    int y = 0;
+    int w = 0;
+    int h = 0;
+    float ratio = pobwindow->devicePixelRatio();
     if (n) {
         pobwindow->LAssert(L, n >= 4, "Usage: SetViewport([x, y, width, height])");
         for (int i = 1; i <= 4; i++) {
             pobwindow->LAssert(L, lua_isnumber(L, i), "SetViewport() argument %d: expected number, got %t", i, i);
         }
-        pobwindow->AppendCmd(std::make_unique<ViewportCmd>((int)lua_tointeger(L, 1), (int)lua_tointeger(L, 2), (int)lua_tointeger(L, 3), (int)lua_tointeger(L, 4)));
+        x = lua_tointeger(L, 1);
+        y = lua_tointeger(L, 2);
+        w = lua_tointeger(L, 3);
+        h = lua_tointeger(L, 4);
     } else {
-        pobwindow->AppendCmd(std::make_unique<ViewportCmd>(0, 0, pobwindow->width, pobwindow->height));
+      w = pobwindow->width;
+      h = pobwindow->height;
     }
+    pobwindow->AppendCmd(std::make_unique<ViewportCmd>(x, y, w, h));
     return 0;
 }
 
@@ -877,10 +895,13 @@ static int l_DrawString(lua_State* L)
     pobwindow->LAssert(L, lua_isstring(L, 6), "DrawString() argument 6: expected string, got %t", 6);
     static const char* alignMap[6] = { "LEFT", "CENTER", "RIGHT", "CENTER_X", "RIGHT_X", nullptr };
     static const char* fontMap[4] = { "FIXED", "VAR", "VAR BOLD", nullptr };
-    pobwindow->AppendCmd(std::make_unique<DrawStringCmd>(
-        (float)lua_tonumber(L, 1), (float)lua_tonumber(L, 2), luaL_checkoption(L, 3, "LEFT", alignMap), 
-        (int)lua_tointeger(L, 4), luaL_checkoption(L, 5, "FIXED", fontMap), lua_tostring(L, 6)
-                                                  ));
+    int left = (float)lua_tonumber(L, 1);
+    int top = (float)lua_tonumber(L, 2);
+    char align = luaL_checkoption(L, 3, "LEFT", alignMap);
+    int height = (int)lua_tointeger(L, 4);
+    char font = luaL_checkoption(L, 5, "FIXED", fontMap);
+    const char* text = lua_tostring(L, 6);
+    pobwindow->AppendCmd(std::make_unique<DrawStringCmd>(left, top, align, height, font, text));
     return 0;
 }
 
@@ -1746,7 +1767,7 @@ int main(int argc, char **argv)
     if (result != 0) {
         lua_error(L);
     }
-    pobwindow->resize(800, 600);
+    pobwindow->resize(1024, 768);
     pobwindow->show();
     QFontDatabase::addApplicationFont("VeraMono.ttf");
     QFontDatabase::addApplicationFont("LiberationSans-Regular.ttf");

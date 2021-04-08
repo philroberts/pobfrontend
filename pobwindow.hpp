@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QTimer>
 #include <memory>
+#include <QScreen>
 
 #include "main.h"
 #include "subscript.hpp"
@@ -61,6 +62,8 @@ public:
     void wheelEvent(QWheelEvent *event);
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
+    int scaleWidth;
+    int scaleHeight;
 
     void LAssert(lua_State* L, int cond, const char* fmt, ...);
     int IsUserData(lua_State* L, int index, const char* metaName);
